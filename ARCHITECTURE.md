@@ -91,7 +91,7 @@ UI event → command (undoable) → Zustand store (instant) → write queue → 
 ## Deployment / env
 
 ```
-VITE_SUPABASE_URL=https://nsatnbeayrfaynqjouef.supabase.co
+VITE_SUPABASE_URL=https://varnswkomuckwgobplld.supabase.co
 VITE_SUPABASE_ANON_KEY=...
 ```
 

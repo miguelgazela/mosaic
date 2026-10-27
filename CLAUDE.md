@@ -8,7 +8,7 @@ Web clone of Milanote. Read before working:
 
 ## Supabase (shared project — be careful)
 
-- Project `nsatnbeayrfaynqjouef` is shared with KangarooSplit and another app.
+- Project `varnswkomuckwgobplld` is shared with KangarooSplit and another app.
 - Only touch schema `milanote`, bucket `milanote-files`, functions `milanote-*`. Never alter `public`, other schemas, auth settings, or other apps' functions/buckets.
 - Migrations: `supabase/migrations/NNNN_name.sql`, numbered, wrapped in `begin; … commit;`, idempotent where cheap. Applied by hand in the SQL Editor — never assume it ran; tell the user what to run.
 - Update `DATA_MODEL.md` in the same change as any schema change.

@@ -1,0 +1,37 @@
+/* Placeholder tokens (P0). Replace with real values from Claude Design mockups. */
+:root {
+  /* surfaces */
+  --canvas-bg: #f3f1ee;
+  --card-bg: #ffffff;
+  --border: #e4e0da;
+  --text: #2b2a28;
+  --text-muted: #77736d;
+  --accent: #e8503a;
+
+  /* card colour palette */
+  --card-color-1: #fff3b0;
+  --card-color-2: #ffd9b3;
+  --card-color-3: #ffc2c2;
+  --card-color-4: #f7c6e5;
+  --card-color-5: #d9c7f5;
+  --card-color-6: #c2d4ff;
+  --card-color-7: #bfe9f5;
+  --card-color-8: #c4efd0;
+  --card-color-9: #e2f0b5;
+  --card-color-10: #dcd8d2;
+
+  /* shape */
+  --radius-card: 6px;
+  --radius-ui: 8px;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.08), 0 2px 8px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.1), 0 6px 16px rgb(0 0 0 / 0.1);
+
+  /* spacing: 8px grid */
+  --grid: 8px;
+
+  /* type */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+}

@@ -6,7 +6,7 @@ Visual board app for organising ideas: a free-form canvas of notes, images, link
 
 - Web only (desktop browser first). Phones: read/view works, editing best-effort (responsive + PWA install).
 - Single owner per board. No live multiplayer. Read-only share links for others.
-- Backend: existing Supabase project `nsatnbeayrfaynqjouef` (shared with KangarooSplit + another app).
+- Backend: existing Supabase project `varnswkomuckwgobplld` (shared with KangarooSplit + another app).
   - Everything lives in schema `milanote`. Never touch `public`, other apps' schemas, or project-wide auth settings.
   - Edge functions prefixed `milanote-`, storage buckets prefixed `milanote-`.
 - Running cost: €0 (Supabase free tier, Vercel free tier). Free tier limits matter:

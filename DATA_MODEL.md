@@ -1,6 +1,8 @@
 # Data model — schema `milanote`
 
-Draft for `supabase/migrations/0001_init.sql`. Final SQL is written in Phase 0; keep this doc in sync when it changes.
+Implemented in `supabase/migrations/0001_init.sql` (P0 applies: schema, enum, tables, RLS, `is_member`, `ensure_home`, `board_path`, storage, realtime). Other RPCs below arrive in later phases. Keep this doc in sync when the SQL changes.
+
+Notes on the P0 SQL: `members` is select-only for users (insert via SQL Editor); `ensure_home()` raises `42501` for non-members; `board_path` returns `[{id,title,icon}]` root-first as jsonb.
 
 ## Tables
 
