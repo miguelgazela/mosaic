@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+.claude/local-simulator
+test-results/
+playwright-report/
