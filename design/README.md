@@ -1,6 +1,6 @@
 # Design
 
-Mockups are made in Claude Design from the brief:
+Mockups are made in Claude Design from the brief (`MOCKUP_BRIEF.md`, copy of the live doc):
 https://claude.ai/artifact/QFmT5WHFuaKDXEok9n3P98 (Milanote Clone — Mockup Brief)
 
 When mockups are ready, put here:
