@@ -4,10 +4,12 @@ import { columnCard } from './column/columnCard'
 import { debugCard } from './debug/debugCard'
 import { noteCard } from './note/noteCard'
 import { swatchCard } from './swatch/swatchCard'
+import { todoCard } from './todo/TodoCard'
 
 // One line per card type. Order = tool rail order and the order `onPaste` hooks are asked.
 export const cardRegistry: Record<string, CardDefinition> = {
   note: noteCard,
+  todo: todoCard,
   board: boardCard,
   column: columnCard,
   swatch: swatchCard,

@@ -8,6 +8,7 @@ import { BoardPage } from './BoardPage'
 import { DevCanvasPage } from './DevCanvasPage'
 import { DevBoardPage } from './DevBoardPage'
 import { NotFoundPage } from './NotFoundPage'
+import { TasksPage } from '../features/tasks/TasksPage'
 import { NotMember } from '../auth/NotMember'
 import { ToastHost } from '../ui'
 import { useFlushAllOnStart } from '../lib/sync/useFlushAllOnStart'
@@ -29,6 +30,8 @@ export function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<RequireMember><HomeRedirect /></RequireMember>} />
             <Route path="/b/:boardId" element={<RequireMember><BoardPage /></RequireMember>} />
+            <Route path="/tasks" element={<RequireMember><TasksPage /></RequireMember>} />
+            {import.meta.env.DEV && <Route path="/dev/tasks" element={<TasksPage />} />}
             {import.meta.env.DEV && <Route path="/dev/canvas" element={<DevCanvasPage />} />}
             {import.meta.env.DEV && <Route path="/dev/board/:boardId" element={<DevBoardPage />} />}
             {import.meta.env.DEV && <Route path="/dev/not-member" element={<NotMember />} />}

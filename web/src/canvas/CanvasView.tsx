@@ -12,9 +12,11 @@ import { EmptyHint } from './EmptyHint'
 import { SelectionToolbar } from './SelectionToolbar'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { ZoomControls } from './ZoomControls'
+import { useFocusCard } from './focus'
 
 export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean } = {}) {
   useCanvasShortcuts()
+  useFocusCard()
   const ref = useRef<HTMLDivElement>(null)
   const touch = useRef(createTouchGestures()).current
   const [menu, setMenu] = useState<MenuState | null>(null)
