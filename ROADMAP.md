@@ -14,7 +14,9 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | S1 Stabilise D1 + P2 | Done except the manual offline-flush check. Live Supabase (`npx playwright test sync`): edit survives reload ✓, two tabs mirror ✓ (test allows 3 s; <1 s not timed). Offline edit flushes on reconnect: not yet checked by hand |
 | P3 Notes, columns, boards, swatch | Done (`da9ad34`, Wave A). Not checked against live Supabase |
 | P6 To-dos + Tasks view | Done (`0df4aaf`, merged `cb35203`, Wave A). Migration `0004_tasks.sql` must be run in the SQL Editor; not checked live |
-| Wave B: P4, P5, P7 | Next — start from `main` at or after `cb35203` |
+| P4 Images + files | Done (`d36bcd9`, Wave B). Storage mocked in tests; real upload not checked live |
+| P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
+| P7 Connections | In progress (Wave B); merges last, rebased onto `main` |
 | P8 … P12 | Not started |
 
 ### Open follow-ups
@@ -23,6 +25,9 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 - **P8:** copy/paste or duplicate of a board card shares the same child board — duplicate must deep-copy. Board cards don't register the `dropTarget` hook yet; P8 registers it for move-to-board.
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
+- **Deploy:** `supabase functions deploy milanote-unfurl --project-ref varnswkomuckwgobplld` (JWT verification on, no secrets). Then check YouTube, GitHub, a news site and Pinterest unfurl.
+- **P4 leftovers:** selected-image size badge (engine; P12), selection ring should include the caption, lightbox should cap at ~960 px, drop zone should show cards faintly not dimmed, PDF first-page preview not built. Image `caption` is plain text now (P10 search reads it as a string). Deleted image/file objects stay in the bucket until `milanote-purge` (P8). `Toolbar.tsx` has a special Upload button because the `toolbar` field can't express a non-card tool.
+- **P5 leftovers:** DNS-rebinding gap in the SSRF guard (resolve-then-fetch; see the function README); preview images are hotlinked, not re-hosted; no keyboard shortcut for links.
 - **Parallel testing:** run Playwright with `E2E_PORT=<free port> npx playwright test` so a session never tests another worktree's dev server.
 
 ## Dependency graph
