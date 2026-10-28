@@ -7,6 +7,12 @@ describe('rows', () => {
   it('round-trips an element', () => {
     expect(fromRow(toRow(el, 'b', 'c', false))).toEqual(el)
   })
+  it('stores the dev debug card as a note row (not in the DB enum) and restores it', () => {
+    const dbg = { ...el, type: 'debug' }
+    const row = toRow(dbg, 'b', 'c', false)
+    expect(row.type).toBe('note')
+    expect(fromRow(row)).toEqual(dbg)
+  })
   it('marks deletion with a timestamp', () => {
     expect(toRow(el, 'b', 'c', false).deleted_at).toBeNull()
     expect(toRow(el, 'b', 'c', true).deleted_at).toMatch(/^\d{4}-/)
