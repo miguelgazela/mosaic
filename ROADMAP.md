@@ -9,9 +9,9 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P0 Foundation | Done (`69244fb`) |
 | P1 Canvas engine | Done (`e9cc9e0`) — built before the mockups; D1 brings it in line |
 | Mockups | Done — 46 frames, see `design/README.md` |
-| D1 Design alignment | Session done; not committed. P2 ran at the same time in the same folder (mistake — see rules below) |
-| P2 Persistence + sync | Session done, built on D1's `TopBar`/`SaveStatus`/`OfflineBanner`; not committed, not tested against live Supabase |
-| S1 Stabilise D1 + P2 | Next |
+| D1 Design alignment | Done (`4421889`) |
+| P2 Persistence + sync | Done (`802cf37`); live check pending (see S1) |
+| S1 Stabilise D1 + P2 | Code done; **live Supabase check still to run** — needs a member account: `E2E_EMAIL=… E2E_PASSWORD=… npx playwright test sync` in `web/`, plus the offline check by hand |
 | P3 … P12 | Not started |
 
 ## Dependency graph

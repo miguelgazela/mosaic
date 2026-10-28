@@ -44,7 +44,7 @@ export class WriteQueue {
   enqueue(rows: ElementRow[]): void {
     if (!rows.length || this.stopped) return
     for (const r of rows) this.pending.set(r.id, r)
-    this.o.onStatus(this.o.isOnline() ? 'saving' : 'offline')
+    this.o.onStatus(this.busyStatus())
     this.persist()
     this.schedule(this.o.debounceMs ?? 300)
   }
@@ -81,7 +81,7 @@ export class WriteQueue {
     const size = this.o.batchSize ?? 100
     while (this.pending.size && !this.stopped) {
       if (!this.o.isOnline()) { this.o.onStatus('offline'); return }
-      this.o.onStatus('saving')
+      this.o.onStatus(this.busyStatus())
       const batch = [...this.pending.values()].slice(0, size)
       try {
         await this.o.send(batch)
@@ -97,6 +97,12 @@ export class WriteQueue {
       this.persist()
     }
     if (!this.pending.size) this.o.onStatus('saved')
+  }
+
+  /** While a failed send is being retried the status stays 'error' until a send succeeds. */
+  private busyStatus(): SaveStatus {
+    if (!this.o.isOnline()) return 'offline'
+    return this.failures > 0 ? 'error' : 'saving'
   }
 
   stop(): void {

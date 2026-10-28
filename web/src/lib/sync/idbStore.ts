@@ -3,6 +3,7 @@ import type { QueueStorage } from './writeQueue'
 
 const DB = 'milanote-sync'
 const STORE = 'queue'
+const PREFIX = 'board:'
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -28,7 +29,7 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
 
 /** Pending rows for one board, kept in IndexedDB. No-op when IndexedDB is unavailable. */
 export function idbQueueStorage(boardId: string): QueueStorage {
-  const key = `board:${boardId}`
+  const key = PREFIX + boardId
   if (typeof indexedDB === 'undefined') return { load: async () => [], save: async () => {} }
   return {
     load: async () => (await tx<ElementRow[] | undefined>('readonly', (s) => s.get(key))) ?? [],
@@ -37,4 +38,42 @@ export function idbQueueStorage(boardId: string): QueueStorage {
       else await tx('readwrite', (s) => s.delete(key))
     },
   }
+}
+
+/** Store used by `flushAllQueued`: every board's pending rows, and a delete that only fires if nothing changed. */
+export interface QueuedBoards {
+  list(): Promise<{ boardId: string; rows: ElementRow[] }[]>
+  /** Delete the board's entry only if it still holds exactly `rows` (an open board may have written newer ones). */
+  clearIfUnchanged(boardId: string, rows: ElementRow[]): Promise<void>
+}
+
+export const idbQueuedBoards: QueuedBoards = {
+  async list() {
+    if (typeof indexedDB === 'undefined') return []
+    const keys = await tx<IDBValidKey[]>('readonly', (s) => s.getAllKeys())
+    const out: { boardId: string; rows: ElementRow[] }[] = []
+    for (const k of keys) {
+      if (typeof k !== 'string' || !k.startsWith(PREFIX)) continue
+      const rows = await tx<ElementRow[] | undefined>('readonly', (s) => s.get(k))
+      if (rows?.length) out.push({ boardId: k.slice(PREFIX.length), rows })
+    }
+    return out
+  },
+  async clearIfUnchanged(boardId, rows) {
+    if (typeof indexedDB === 'undefined') return
+    const key = PREFIX + boardId
+    const db = await open()
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const t = db.transaction(STORE, 'readwrite')
+        const s = t.objectStore(STORE)
+        const get = s.get(key)
+        get.onsuccess = () => { if (JSON.stringify(get.result) === JSON.stringify(rows)) s.delete(key) }
+        t.oncomplete = () => resolve()
+        t.onerror = () => reject(t.error)
+      })
+    } finally {
+      db.close()
+    }
+  },
 }

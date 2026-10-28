@@ -10,13 +10,20 @@ import { DevBoardPage } from './DevBoardPage'
 import { NotFoundPage } from './NotFoundPage'
 import { NotMember } from '../auth/NotMember'
 import { ToastHost } from '../ui'
+import { useFlushAllOnStart } from '../lib/sync/useFlushAllOnStart'
 
 const queryClient = new QueryClient()
+
+function SyncBoot() {
+  useFlushAllOnStart()
+  return null
+}
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <SyncBoot />
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />

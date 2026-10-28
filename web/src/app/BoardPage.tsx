@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { CanvasView } from '../canvas/CanvasView'
@@ -9,9 +9,14 @@ import { saveSkeleton } from '../features/boards/skeleton'
 import { fetchBoard, renameBoard, type BoardData, type BoardMeta } from '../lib/sync/boardApi'
 import { startBoardSync } from '../lib/sync/boardSync'
 import { useSync } from '../lib/sync/status'
+import { toSaveState } from '../lib/sync/saveState'
 import { Button, OfflineBanner, useOnline } from '../ui'
 import { FullPageMessage } from '../ui/FullPageMessage'
+import { NotFoundPage } from './NotFoundPage'
 import { TopBar } from './TopBar'
+
+/** PostgREST code for `.single()` with zero rows; invalid uuids (22P02) also mean "no such board". */
+const isNotFound = (e: unknown) => ['PGRST116', '22P02'].includes((e as { code?: string })?.code ?? '')
 
 const boardKey = (id: string) => ['board', id] as const
 
@@ -25,6 +30,7 @@ export function BoardPage() {
   const online = useOnline()
   const status = useSync((s) => s.status)
   const qc = useQueryClient()
+  const navigate = useNavigate()
 
   // Fresh load on every open (gcTime 0); the canvas store owns the data afterwards.
   const board = useQuery({
@@ -87,13 +93,15 @@ export function BoardPage() {
   })
 
   if (board.isError) {
+    // No row back (trashed, wrong id, or RLS hides it) → the 404 frame; anything else can be retried.
+    if (isNotFound(board.error)) return <NotFoundPage />
     return (
       <FullPageMessage>
-        <div className="flex flex-col items-center gap-3 text-center">
-          <p>Could not open this board: {board.error.message}</p>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p>Couldn’t open this board. {board.error.message}</p>
           <div className="flex gap-2">
-            <Button onClick={() => void board.refetch()}>Retry</Button>
-            <Link className="inline-flex h-9 items-center rounded-[var(--radius-ui)] px-4 text-[length:var(--text-card)] font-semibold hover:bg-[var(--fill-hover)]" to="/">Go Home</Link>
+            <Button variant="primary" onClick={() => void board.refetch()}>Try again</Button>
+            <Button onClick={() => navigate('/')}>Go to Home</Button>
           </div>
         </div>
       </FullPageMessage>
@@ -103,8 +111,7 @@ export function BoardPage() {
   const data = board.data
   const path = data?.path ?? []
   const current = path[path.length - 1]
-  // Retrying after a failed send still reads as "Saving…"; only a lost connection is "Offline".
-  const saveState = !online || status === 'offline' ? 'offline' : status === 'saved' ? 'saved' : 'saving'
+  const saveState = toSaveState(online, status)
   return (
     <div className="flex h-full flex-col">
       <TopBar

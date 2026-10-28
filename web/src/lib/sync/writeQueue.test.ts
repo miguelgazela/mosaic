@@ -69,6 +69,19 @@ describe('WriteQueue', () => {
     expect(statuses.at(-1)).toBe('saved')
   })
 
+  it('stays in error between retries until a send succeeds', async () => {
+    let fail = 2
+    const { q, statuses } = setup({ send: async () => { if (fail-- > 0) throw new Error('x') } })
+    q.enqueue([row('a')])
+    await vi.advanceTimersByTimeAsync(300)
+    q.enqueue([row('b')]) // new edits while retrying keep the error visible
+    await vi.advanceTimersByTimeAsync(5000)
+    const firstError = statuses.indexOf('error')
+    expect(firstError).toBeGreaterThan(-1)
+    expect(statuses.slice(firstError)).not.toContain('saving')
+    expect(statuses.at(-1)).toBe('saved')
+  })
+
   it('holds while offline and sends after retryNow', async () => {
     let online = false
     const { q, sent, statuses } = setup({ online: () => online })
