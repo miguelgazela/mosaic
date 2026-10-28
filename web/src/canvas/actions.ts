@@ -1,5 +1,7 @@
 import { newId } from '../lib/ids'
-import { getCard } from '../cards/registry'
+import { getCard, listCards } from '../cards/registry'
+import type { PasteData } from '../cards/types'
+import { sortKeyAt, withChildren } from './columns'
 import { cloneElements, parseClipboard, serializeClipboard } from './clipboard'
 import { addCmd, patchCmd, patchEntries, removeCmd } from './commands'
 import { snap, type Point } from './geometry'
@@ -13,8 +15,20 @@ const selectedElements = (): CanvasElement[] => {
   const s = st()
   return selectedIds(s).map((id) => s.elements[id]).filter(Boolean)
 }
+/** Selection plus the cards inside any selected column (delete, copy and duplicate take them along). */
+const selectedWithChildren = (): CanvasElement[] => {
+  const s = st()
+  return withChildren(s.elements, selectedIds(s))
+}
+const selectedTopLevel = (): CanvasElement[] => selectedElements().filter((e) => !e.parentId)
 
-export function addCard(type: string, center: Point): CanvasElement | null {
+export interface AddOptions {
+  content?: Record<string, unknown>
+  /** Skip the edit-on-create behaviour (used when the card is filled from a paste). */
+  noEdit?: boolean
+}
+
+export function addCard(type: string, center: Point, opts: AddOptions = {}): CanvasElement | null {
   const def = getCard(type)
   if (!def) return null
   const { width, height } = def.defaultSize
@@ -27,32 +41,65 @@ export function addCard(type: string, center: Point): CanvasElement | null {
     height,
     z: keysAfter(allZ(), 1)[0],
     color: null,
-    content: def.defaultContent?.() ?? {},
+    parentId: null,
+    sortKey: null,
+    content: opts.content ?? def.defaultContent?.() ?? {},
   }
   st().exec(addCmd([el]))
+  def.onCreate?.(el)
+  if (def.editOnCreate && !opts.noEdit) st().setEditing(el.id)
   return el
 }
 
+/**
+ * Route clipboard data: cards get first refusal via `onPaste`, then plain text becomes a note.
+ * Returns true when something took it.
+ */
+export function pasteData(data: PasteData, at: Point): boolean {
+  for (const def of listCards()) if (def.onPaste?.(data, at)) return true
+  const text = data.text?.trim()
+  const note = getCard('note')
+  if (text && note?.contentFromText) {
+    addCard('note', at, { content: note.contentFromText(data.text!), noEdit: true })
+    return true
+  }
+  return false
+}
+
+/** Move the selected cards into `targetId` (a card with a drop target, e.g. a column), appended at the end. */
+export function moveSelectionInto(targetId: string): void {
+  const s = st()
+  const target = s.elements[targetId]
+  const dt = target && getCard(target.type)?.dropTarget
+  if (!target || !dt) return
+  const dragged = selectedTopLevel().filter((e) => e.id !== targetId)
+  if (!dragged.length || !dt.accepts(target, dragged)) return
+  const patches = dt.drop({ target, dragged, hint: {} })
+  const entries = patchEntries(s.elements, patches)
+  if (entries.length) s.exec(patchCmd('Move into column', entries))
+}
+
 export function deleteSelection(): void {
-  const els = selectedElements()
+  const els = selectedWithChildren()
   if (els.length) st().exec(removeCmd(els))
 }
 
 export function selectAll(): void {
-  st().setSelection(Object.keys(st().elements))
+  const els = st().elements
+  st().setSelection(Object.keys(els).filter((id) => !els[id].parentId))
 }
 
 export function nudge(dx: number, dy: number): void {
   const s = st()
   const afters: Record<string, Partial<CanvasElement>> = {}
-  for (const e of selectedElements()) afters[e.id] = { x: e.x + dx, y: e.y + dy }
+  for (const e of selectedTopLevel()) afters[e.id] = { x: e.x + dx, y: e.y + dy }
   const entries = patchEntries(s.elements, afters)
   if (entries.length) s.exec(patchCmd('Nudge', entries))
 }
 
 export function reorder(toFront: boolean): void {
   const s = st()
-  const sel = selectedElements().sort((a, b) => (a.z < b.z ? -1 : 1))
+  const sel = selectedTopLevel().sort((a, b) => (a.z < b.z ? -1 : 1))
   if (!sel.length) return
   const others = Object.values(s.elements).filter((e) => !s.selected[e.id]).map((e) => e.z)
   const keys = toFront ? keysAfter(others, sel.length) : keysBefore(others, sel.length)
@@ -68,14 +115,26 @@ export function setColor(color: string | null): void {
   s.exec(patchCmd('Colour', patchEntries(s.elements, afters)))
 }
 
-function pasteItems(items: CanvasElement[], offset: number): void {
+function pasteItems(items: CanvasElement[], offset: number, stayInColumn = false): void {
   const clones = cloneElements(items, { dx: offset, dy: offset }, newId, keysAfter(allZ(), items.length))
+  if (stayInColumn) {
+    // Duplicating a card that sits in a column: the copy goes right after it, in the same column.
+    const sorted = [...items].sort((a, b) => (a.z < b.z ? -1 : 1))
+    clones.forEach((c, i) => {
+      const src = sorted[i]
+      if (!src.parentId || c.parentId) return
+      const sibs = Object.values(st().elements).filter((e) => e.parentId === src.parentId).sort((a, b) => ((a.sortKey ?? '') < (b.sortKey ?? '') ? -1 : 1))
+      const at = sibs.findIndex((e) => e.id === src.id)
+      c.parentId = src.parentId
+      c.sortKey = sortKeyAt(sibs.map((e) => e.sortKey), at + 1)
+    })
+  }
   st().exec(addCmd(clones))
 }
 
 export function duplicateSelection(): void {
-  const items = selectedElements()
-  if (items.length) pasteItems(items, 16)
+  const items = selectedWithChildren()
+  if (items.length) pasteItems(items, 16, true)
 }
 
 // --- clipboard: system clipboard JSON (via copy/cut/paste events) + in-memory fallback ---
@@ -86,7 +145,7 @@ let pasteCount = 0
 
 /** Text for the system clipboard, or null when nothing is selected. */
 export function copySelection(): string | null {
-  const els = selectedElements()
+  const els = selectedWithChildren()
   if (!els.length) return null
   internalClipboard = serializeClipboard(els)
   pasteCount = 0

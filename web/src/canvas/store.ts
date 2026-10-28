@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { CanvasElement } from './types'
 import type { Guide, Rect, Size, Viewport } from './geometry'
+import type { DropHint } from '../cards/types'
 import { compareZ } from './order'
+import { rootOf } from './columns'
 import { UndoStack, type Command } from './undo'
 
 export type Tool = 'select' | 'hand'
@@ -24,6 +26,13 @@ export interface BoardState {
   panning: boolean
   marquee: Rect | null
   guides: Guide[]
+  /** Board being shown (parent of cards created now); set by the page that owns the canvas. */
+  boardId: string | null
+  setBoardId(id: string | null): void
+  /** Card in text/name edit mode (note, column title, board name, swatch). */
+  editing: string | null
+  /** Drop target under the pointer during a card drag. */
+  dropHint: { targetId: string; hint: DropHint } | null
   canUndo: boolean
   canRedo: boolean
 
@@ -36,6 +45,8 @@ export interface BoardState {
   setPanning(v: boolean): void
   setMarquee(r: Rect | null): void
   setGuides(g: Guide[]): void
+  setEditing(id: string | null): void
+  setDropHint(h: { targetId: string; hint: DropHint } | null): void
   setSelection(ids: string[]): void
   reportHeight(id: string, h: number): void
 
@@ -75,6 +86,9 @@ export const useBoard = create<BoardState>()((set, get) => {
     panning: false,
     marquee: null,
     guides: [],
+    boardId: null,
+    editing: null,
+    dropHint: null,
     canUndo: false,
     canRedo: false,
 
@@ -82,7 +96,7 @@ export const useBoard = create<BoardState>()((set, get) => {
       history.clear()
       const elements: Record<string, CanvasElement> = {}
       for (const e of els) elements[e.id] = e
-      set({ elements, rank: computeRank(elements), measured: {}, selected: {}, marquee: null, ...flags() })
+      set({ elements, rank: computeRank(elements), measured: {}, selected: {}, marquee: null, editing: null, dropHint: null, ...flags() })
     },
     setViewport: (viewport) => set({ viewport }),
     setSize: (size) => set({ size }),
@@ -92,11 +106,19 @@ export const useBoard = create<BoardState>()((set, get) => {
     setPanning: (panning) => set({ panning }),
     setMarquee: (marquee) => set({ marquee }),
     setGuides: (guides) => set((s) => (guides.length === 0 && s.guides.length === 0 ? s : { guides })),
+    setBoardId: (boardId) => set({ boardId }),
+    setEditing: (editing) => set((s) => (s.editing === editing ? s : { editing })),
+    setDropHint(dropHint) {
+      const cur = get().dropHint
+      if (cur === dropHint) return
+      if (cur && dropHint && cur.targetId === dropHint.targetId && cur.hint.index === dropHint.hint.index) return
+      set({ dropHint })
+    },
     setSelection(ids) {
       const { elements } = get()
       const selected: Record<string, true> = {}
       for (const id of ids) if (elements[id]) selected[id] = true
-      set({ selected })
+      set((s) => (s.editing && !selected[s.editing] ? { selected, editing: null } : { selected }))
     },
     reportHeight(id, h) {
       if (get().measured[id] === h) return
@@ -161,7 +183,9 @@ export const elementHeight = (s: BoardState, id: string): number => {
   return e.height ?? s.measured[id] ?? DEFAULT_AUTO_HEIGHT
 }
 
+/** Rect in world space. A card inside a column reports its column's rect (children have no own x/y). */
 export const elementRect = (s: BoardState, id: string): Rect => {
-  const e = s.elements[id]
+  const e = rootOf(s.elements, id) ?? s.elements[id]
+  id = e.id
   return { x: e.x, y: e.y, w: e.width, h: elementHeight(s, id) }
 }

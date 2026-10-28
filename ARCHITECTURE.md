@@ -50,6 +50,22 @@ Rules:
 - Viewport culling: skip rendering cards far outside viewport when > 200 cards.
 - Coordinates: world units = CSS px at zoom 1. Grid = 8.
 
+### Engine extension points (added in P3)
+
+Contract lives in `web/src/cards/types.ts`. Cards only register hooks; the engine never imports a card type.
+
+**Paste routing — `onPaste?(data, at): boolean`.** `data = { text?, url?, files? }` (`url` is set only when the clipboard text is a single http(s) URL; built by `canvas/paste.ts`). The paste handler (`useCanvasShortcuts` → `actions.pasteData`) first tries our own clipboard JSON (copied cards), then asks each registered card in registry order; the first to return `true` owns the paste and creates its card (`addCard(type, at, { content })`). If nobody takes it, plain text becomes a note (via the note card's `contentFromText`). P4 registers files/images, P5 registers `url`; neither touches the engine. Registry order matters: put specific hooks (link, image) before anything greedy.
+
+**Drop targets — `dropTarget?: { accepts(target, dragged), hover?(target, pointer), drop(ctx) }`.** While cards are dragged, the engine hit-tests the pointer against top-level cards that have a `dropTarget` and `accepts` the dragged set (topmost wins), and stores `{ targetId, hint }` in `useBoard().dropHint` (cards read it to draw the highlight and insert line). On release it calls `drop`, which returns element patches (`parentId`, `sortKey`, `width`, …); the engine merges them into the one undoable "Move" command. Columns implement it (insert index from child midpoints). P8 can reuse it for "drop onto board card = move to that board"; the board card does not register a `dropTarget` yet.
+
+**Children of a column.** `CanvasElement.parentId` + `sortKey` (DB: `parent_id`, `sort_key`). A card with `parentId` set is not in the top-level `CardLayer`; the column renders it through `renderChild(id)` (passed in `CardProps`), stacked by `sortKey`, full column width; its `x/y` are ignored. Dragging a child lifts it out first (position from its DOM box), so after that it behaves like any card. Delete, copy and duplicate take a column's children along (`columns.ts › withChildren`). `elementRect()` of a child returns its column's rect (for the selection toolbar).
+
+**Other `CardDefinition` fields:** `onCreate(el)` (side effect after add; board card creates the child board row), `editOnCreate` (new card enters edit mode through `useBoard().editing`), `menuItems(el)` (extra single-selection context-menu items, optionally with a side panel), `contentFromText`. The "Move into column…" menu item lists every card whose `dropTarget` accepts the selection and calls `actions.moveSelectionInto`.
+
+**Edit mode.** `useBoard().editing` is the id of the card being edited (note text, column title, board name, swatch). Clearing the selection ends it. While it is set, single-key shortcuts are off. Notes render read-only HTML from the TipTap schema (`generateHTML`) and mount an editor only while editing, so big boards stay light.
+
+**Boards.** Board cards talk to the backend through `features/boards/boardRepo.ts` (`create / info / count / update`); the dev pages swap in an in-memory copy so `/dev/board/<id>` works without auth. Navigation goes through `useBoardHref()` (`/b/:id`, or `/dev/board/:id` on the dev pages).
+
 ## Data flow and sync
 
 ```

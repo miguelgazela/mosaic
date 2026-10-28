@@ -23,6 +23,8 @@ export function DevCanvasPage() {
       height: 96,
       z: zs[i],
       color: null,
+      parentId: null,
+      sortKey: null,
       content: {},
     }))
     useBoard.getState().reset(els)

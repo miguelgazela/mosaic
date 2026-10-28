@@ -2,6 +2,7 @@ import type { CardDefinition, CardProps } from '../types'
 import { Bug } from 'lucide-react'
 import { colorVar } from '../../canvas/colors'
 
+/** Dev-only sandbox card (registered only when `import.meta.env.DEV`). Not persisted: not in the DB enum. */
 function DebugCard({ element: el }: CardProps) {
   return (
     <div

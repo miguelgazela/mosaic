@@ -5,7 +5,7 @@ import { boundsOf, worldToScreen } from './geometry'
 import { elementRect, selectedIds, useBoard } from './store'
 
 const CardLayer = memo(function CardLayer() {
-  const ids = useBoard(useShallow((s) => Object.keys(s.elements)))
+  const ids = useBoard(useShallow((s) => Object.keys(s.elements).filter((id) => !s.elements[id].parentId)))
   return (
     <>
       {ids.map((id) => (

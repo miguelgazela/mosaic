@@ -26,6 +26,8 @@ export function parseClipboard(text: string | null | undefined): CanvasElement[]
         height: isNum(i.height) ? i.height : null,
         z: typeof i.z === 'string' ? i.z : 'a0',
         color: typeof i.color === 'string' ? i.color : null,
+        parentId: typeof i.parentId === 'string' ? i.parentId : null,
+        sortKey: typeof i.sortKey === 'string' ? i.sortKey : null,
         content: i.content && typeof i.content === 'object' ? i.content : {},
       })
     }
@@ -35,21 +37,32 @@ export function parseClipboard(text: string | null | undefined): CanvasElement[]
   }
 }
 
-/** Copies of `items` with new ids, shifted by (dx, dy), stacked in z order using `zKeys` (ascending). */
+/**
+ * Copies of `items` with new ids, shifted by (dx, dy), stacked in z order using `zKeys` (ascending).
+ * A copied card keeps its column only when that column is copied with it; otherwise it becomes top-level.
+ * Cards inside a copied column keep their own position (the offset only moves top-level cards).
+ */
 export function cloneElements(
   items: CanvasElement[],
   offset: { dx: number; dy: number },
   makeId: () => string,
   zKeys: string[],
 ): CanvasElement[] {
-  return [...items]
-    .sort((a, b) => compareZ(a.z, b.z))
-    .map((e, i) => ({
+  const sorted = [...items].sort((a, b) => compareZ(a.z, b.z))
+  const ids = new Map<string, string>()
+  for (const e of sorted) ids.set(e.id, makeId())
+  return sorted.map((e, i) => {
+    const parent = e.parentId ? ids.get(e.parentId) ?? null : null
+    const inside = parent !== null
+    return {
       ...e,
-      id: makeId(),
-      x: e.x + offset.dx,
-      y: e.y + offset.dy,
+      id: ids.get(e.id)!,
+      x: inside ? e.x : e.x + offset.dx,
+      y: inside ? e.y : e.y + offset.dy,
       z: zKeys[i],
+      parentId: parent,
+      sortKey: inside ? e.sortKey : null,
       content: structuredClone(e.content),
-    }))
+    }
+  })
 }

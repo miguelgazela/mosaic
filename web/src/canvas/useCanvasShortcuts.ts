@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import {
-  addCard, copySelection, cutSelection, deleteSelection, duplicateSelection, nudge, pasteClipboard, reorder, selectAll,
+  addCard, copySelection, cutSelection, deleteSelection, duplicateSelection, nudge, pasteClipboard, pasteData, reorder, selectAll,
 } from './actions'
+import { toPasteData } from './paste'
 import { getCardByShortcut } from '../cards/registry'
 import { centerOfView } from './geometry'
 import { fitToContent, zoomBy, zoomTo } from './viewport'
@@ -20,6 +21,8 @@ export function useCanvasShortcuts(): void {
 
     const keydown = (e: KeyboardEvent) => {
       if (isEditable(e.target)) return
+      // A card is entering edit mode (its editor may not have focus yet): keep keys away from single-key shortcuts.
+      if (st().editing !== null && e.key !== 'Escape') return
       if (e.code === 'Space') {
         e.preventDefault()
         st().setSpaceHeld(true)
@@ -43,6 +46,7 @@ export function useCanvasShortcuts(): void {
         nudge(x * step, y * step)
       } else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelection()
       else if (e.key === 'Escape') st().setSelection([])
+      else if (e.key === 'Enter' && st().editing === null && Object.keys(st().selected).length === 1) st().setEditing(Object.keys(st().selected)[0])
       else if (e.key === '+' || e.key === '=') zoomBy(1.25)
       else if (e.key === '-' || e.key === '_') zoomBy(1 / 1.25)
       else if (e.key === '0') zoomTo(1)
@@ -78,7 +82,11 @@ export function useCanvasShortcuts(): void {
     }
     const paste = (e: ClipboardEvent) => {
       if (isEditable(e.target)) return
-      if (pasteClipboard(e.clipboardData?.getData('text/plain'))) e.preventDefault()
+      const text = e.clipboardData?.getData('text/plain')
+      if (pasteClipboard(text)) { e.preventDefault(); return }
+      const s = st()
+      const data = toPasteData(text, [...(e.clipboardData?.files ?? [])])
+      if (pasteData(data, centerOfView(s.viewport, s.size))) e.preventDefault()
     }
 
     window.addEventListener('keydown', keydown)

@@ -11,7 +11,9 @@ const handleBase: CSSProperties = {
   touchAction: 'none',
 }
 
-export const CardShell = memo(function CardShell({ id }: { id: string }) {
+const renderChild = (id: string) => <CardShell key={id} id={id} inColumn />
+
+export const CardShell = memo(function CardShell({ id, inColumn = false }: { id: string; inColumn?: boolean }) {
   const el = useBoard((s) => s.elements[id])
   const selected = useBoard((s) => !!s.selected[id])
   const rank = useBoard((s) => s.rank[id])
@@ -44,14 +46,19 @@ export const CardShell = memo(function CardShell({ id }: { id: string }) {
       data-w={el.width}
       data-h={el.height ?? ''}
       data-selected={selected}
+      data-parent={el.parentId ?? undefined}
       style={{
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        transform: `translate(${el.x}px, ${el.y}px)`,
-        width: el.width,
-        height: el.height ?? undefined,
-        zIndex: lifted ? 1_000_000 : rank,
+        ...(inColumn
+          ? { position: 'relative', width: '100%', height: el.height ?? undefined, zIndex: lifted ? 1_000_000 : undefined }
+          : {
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              transform: `translate(${el.x}px, ${el.y}px)`,
+              width: el.width,
+              height: el.height ?? undefined,
+              zIndex: lifted ? 1_000_000 : rank,
+            }),
         outline: selected ? 'calc(2px / var(--zoom)) solid var(--primary)' : undefined,
         borderRadius: 'var(--radius-card)',
       }}
@@ -62,12 +69,12 @@ export const CardShell = memo(function CardShell({ id }: { id: string }) {
     >
       <div className="card-inner" data-lifted={lifted}>
         {Component ? (
-          <Component element={el} selected={selected} />
+          <Component element={el} selected={selected} inColumn={inColumn} renderChild={renderChild} />
         ) : (
           <div className="rounded-[var(--radius-card)] border border-dashed bg-[var(--card-bg)] p-2 text-[length:var(--text-sm)]">Unknown card “{el.type}”</div>
         )}
       </div>
-      {single && (resize === 'width' || resize === 'both' || resize === 'aspect') && (
+      {single && !inColumn && (resize === 'width' || resize === 'both' || resize === 'aspect') && (
         <>
           {resize === 'width' && (
             <div

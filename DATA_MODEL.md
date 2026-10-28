@@ -2,6 +2,8 @@
 
 Implemented in `supabase/migrations/0001_init.sql` (P0 applies: schema, enum, tables, RLS, `is_member`, `ensure_home`, `board_path`, storage, realtime). Other RPCs below arrive in later phases. Keep this doc in sync when the SQL changes.
 
+P3: no schema change. The client now writes `parent_id`, `sort_key` (column stacking) and `plain_text` (from each card's `toPlainText`) on every element upsert; the `debug` dev card is no longer stored.
+
 Notes on the P0 SQL: `members` is select-only for users (insert via SQL Editor); `ensure_home()` raises `42501` for non-members; `board_path` returns `[{id,title,icon}]` root-first as jsonb.
 
 ## Tables
@@ -59,13 +61,13 @@ Indexes: `(board_id) where deleted_at is null`, `(parent_id)`, GIN `search`, `(t
 #### `content` shapes (TypeScript source of truth in `web/src/cards/types.ts`)
 
 ```ts
-note:   { doc: TipTapJSON }
+note:   { doc: TipTapJSON }   // schema: web/src/cards/note/extensions.ts
 image:  { path: string; thumbPath: string; w: number; h: number; caption?: TipTapJSON; name: string; bytes: number }
 file:   { path: string; name: string; mime: string; bytes: number; previewPath?: string }
 link:   { url: string; title?: string; description?: string; image?: string; favicon?: string; embed?: { provider: 'youtube'|'vimeo'; id: string } }
 todo:   { title?: string; hideCompleted: boolean; items: { id: string; text: string; done: boolean; due?: string /* ISO date */ }[] }
 column: { title: string; collapsed: boolean }
-board:  { boardId: string }   // child board; boards.parent_board_id = this element's board_id
+board:  { boardId: string }   // child board; boards.parent_board_id = this element's board_id. Title, icon (lucide key from features/boards/icons.ts, or an emoji) and colour live on the boards row, not here.
 swatch: { hex: string; name?: string }
 ```
 

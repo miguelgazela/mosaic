@@ -13,7 +13,7 @@ import { SelectionToolbar } from './SelectionToolbar'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { ZoomControls } from './ZoomControls'
 
-export function CanvasView() {
+export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean } = {}) {
   useCanvasShortcuts()
   const ref = useRef<HTMLDivElement>(null)
   const touch = useRef(createTouchGestures()).current
@@ -70,6 +70,11 @@ export function CanvasView() {
           startMarquee(e)
         }
       }}
+      onDoubleClick={(e) => {
+        // FR-23: double-click empty canvas → new note, focused.
+        if ((e.target as HTMLElement).closest('[data-card-id], button, input, [data-testid="selection-toolbar"]')) return
+        addCard('note', clientToWorld(e.clientX, e.clientY))
+      }}
       onPointerMove={(e) => touch.move(e)}
       onPointerUp={(e) => touch.up(e)}
       onPointerCancel={(e) => touch.up(e)}
@@ -103,7 +108,7 @@ export function CanvasView() {
       <GridBackground />
       <WorldLayer />
       <MarqueeOverlay />
-      <EmptyHint />
+      {!hideEmptyHint && <EmptyHint />}
       <SelectionToolbar />
       {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}
       <ZoomControls />

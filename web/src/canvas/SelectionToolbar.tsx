@@ -16,7 +16,7 @@ const Sep = () => <span className="mx-0.5 h-5 w-px bg-[var(--divider)]" aria-hid
 export function SelectionToolbar() {
   const info = useBoard(
     useShallow((s) => {
-      if (s.dragging || s.marquee || s.panning) return null
+      if (s.dragging || s.marquee || s.panning || s.editing) return null
       const ids = selectedIds(s)
       if (!ids.length) return null
       const b = boundsOf(ids.map((id) => elementRect(s, id)))!
@@ -53,7 +53,7 @@ export function SelectionToolbar() {
             )}
           >
             {(close) => (
-              <MenuPanel className="w-[176px]" onClose={close}>
+              <MenuPanel className="w-[208px]" onClose={close}>
                 <ColorSwatches value={info.colour} onPick={(k) => { setColor(k); close() }} />
               </MenuPanel>
             )}

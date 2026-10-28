@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { CanvasView } from '../canvas/CanvasView'
 import { elementHeight, useBoard } from '../canvas/store'
+import { HomeEmpty } from '../features/boards/HomeEmpty'
 import { BoardSkeleton } from '../features/boards/BoardSkeleton'
 import { saveSkeleton } from '../features/boards/skeleton'
 import { fetchBoard, renameBoard, type BoardData, type BoardMeta } from '../lib/sync/boardApi'
@@ -61,6 +62,7 @@ export function BoardPage() {
     if (!hasData || !data) return
     let cancelled = false
     let stop: (() => void) | undefined
+    useBoard.getState().setBoardId(data.board.id)
     startBoardSync(data, { onBoardChange }).then((s) => {
       if (cancelled) { s(); return }
       stop = s
@@ -123,8 +125,9 @@ export function BoardPage() {
         onSignOut={signOut}
       />
       <OfflineBanner online={online} />
-      <div className="min-h-0 flex-1">
-        {readyFor === boardId ? <CanvasView /> : <BoardSkeleton key={boardId} boardId={boardId} />}
+      <div className="relative min-h-0 flex-1">
+        {readyFor === boardId ? <CanvasView hideEmptyHint={!!data?.board.is_home} /> : <BoardSkeleton key={boardId} boardId={boardId} />}
+        {readyFor === boardId && data?.board.is_home && <HomeEmpty />}
       </div>
     </div>
   )

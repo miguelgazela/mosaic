@@ -1,7 +1,8 @@
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { newId } from '../lib/ids'
 import { getCard } from '../cards/registry'
-import { addCmd, patchCmd, patchEntries } from './commands'
+import type { DropHint } from '../cards/types'
+import { addCmd, patchCmd } from './commands'
 import { clientToScreen, clientToWorld } from './canvasDom'
 import { alignGuides, boundsOf, rectFromPoints, rectsIntersect, resizeBox, snap, zoomAt, type Rect } from './geometry'
 import { keysAfter } from './order'
@@ -67,7 +68,7 @@ export function startMarquee(e: ReactPointerEvent): void {
       moved = true
       const rect: Rect = rectFromPoints(startWorld, clientToWorld(ev.clientX, ev.clientY))
       const cur = st()
-      const hits = Object.keys(cur.elements).filter((id) => rectsIntersect(rect, elementRect(cur, id)))
+      const hits = Object.keys(cur.elements).filter((id) => !cur.elements[id].parentId && rectsIntersect(rect, elementRect(cur, id)))
       const ids = [...new Set([...base, ...hits])]
       const k = ids.join()
       if (k !== key) { key = k; cur.setSelection(ids) }
@@ -75,6 +76,43 @@ export function startMarquee(e: ReactPointerEvent): void {
     },
     () => st().setMarquee(null),
   )
+}
+
+type Box = { x: number; y: number; w: number }
+/** World-space box of a rendered card (cards inside columns have no stored position). */
+function domBox(id: string): Box | null {
+  const node = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`)
+  if (!node) return null
+  const r = node.getBoundingClientRect()
+  const p = clientToWorld(r.left, r.top)
+  return { x: p.x, y: p.y, w: r.width / st().viewport.zoom }
+}
+
+const MOVE_KEYS = ['x', 'y', 'z', 'width', 'parentId', 'sortKey'] as const
+const pickMove = (e: CanvasElement): Partial<CanvasElement> => {
+  const o: Record<string, unknown> = {}
+  for (const k of MOVE_KEYS) o[k] = e[k]
+  return o as Partial<CanvasElement>
+}
+
+/** Drop target under the pointer (topmost first), or null. Never a card being dragged. */
+function dropTargetAt(ev: Ev, draggedIds: string[]): { id: string; hint: DropHint } | null {
+  const s = st()
+  const p = clientToWorld(ev.clientX, ev.clientY)
+  const dragged = draggedIds.map((i) => s.elements[i]).filter(Boolean)
+  let best: { id: string; rank: number } | null = null
+  for (const id in s.elements) {
+    const t = s.elements[id]
+    if (t.parentId || draggedIds.includes(id)) continue
+    const dt = getCard(t.type)?.dropTarget
+    if (!dt || !dt.accepts(t, dragged)) continue
+    const r = elementRect(s, id)
+    if (p.x < r.x || p.x > r.x + r.w || p.y < r.y || p.y > r.y + r.h) continue
+    if (!best || s.rank[id] > best.rank) best = { id, rank: s.rank[id] }
+  }
+  if (!best) return null
+  const t = s.elements[best.id]
+  return { id: best.id, hint: getCard(t.type)!.dropTarget!.hover?.(t, ev) ?? {} }
 }
 
 /** Pointer-down on a card. Returns true when the engine handled it (caller stops propagation). */
@@ -100,11 +138,12 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
     origins = {}
     for (const i of ids) { const el = st().elements[i]; origins[i] = { x: el.x, y: el.y, z: el.z } }
   }
-  capture()
-  const startOrigins = origins
   const startIds = ids
+  const before: Record<string, Partial<CanvasElement>> = {}
+  for (const i of startIds) before[i] = pickMove(st().elements[i])
   let moved = false
   let clones: CanvasElement[] = []
+  let lastDrop: { id: string; hint: DropHint } | null = null
 
   track(
     (ev) => {
@@ -121,14 +160,27 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
             const o = cur.elements[oid]
             const nid = newId()
             map[oid] = nid
-            return { ...o, id: nid, z: zs[i], content: structuredClone(o.content) }
+            const box = o.parentId ? domBox(oid) : null
+            return {
+              ...o, id: nid, z: zs[i], parentId: null, sortKey: null, content: structuredClone(o.content),
+              ...(box ? { x: box.x, y: box.y, width: box.w } : {}),
+            }
           })
           cur._add(clones)
           primary = map[id]
           ids = clones.map((c) => c.id)
           cur.setSelection(ids)
-          capture()
+        } else {
+          // Lift cards out of their column so they follow the pointer like any other card.
+          const lifted = ids.filter((i) => cur.elements[i].parentId)
+          if (lifted.length) {
+            cur._patch(lifted.map((i) => {
+              const b = domBox(i)
+              return { id: i, patch: { parentId: null, sortKey: null, ...(b ? { x: b.x, y: b.y, width: b.w } : {}) } }
+            }))
+          }
         }
+        capture()
       }
       const zoom = cur.viewport.zoom
       const dx = (ev.clientX - sx) / zoom
@@ -137,10 +189,12 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       const doSnap = cloneMode || !ev.altKey
       let ddx = (doSnap ? snap(o.x + dx) : o.x + dx) - o.x
       let ddy = (doSnap ? snap(o.y + dy) : o.y + dy) - o.y
-      if (doSnap) {
+      lastDrop = dropTargetAt(ev, ids)
+      cur.setDropHint(lastDrop ? { targetId: lastDrop.id, hint: lastDrop.hint } : null)
+      if (doSnap && !lastDrop) {
         // Snap guides: align edges/centres of the moving group with other cards.
         const group = boundsOf(ids.map((i) => ({ ...elementRect(cur, i), x: origins[i].x + ddx, y: origins[i].y + ddy })))!
-        const others = Object.keys(cur.elements).filter((i) => !ids.includes(i)).map((i) => elementRect(cur, i))
+        const others = Object.keys(cur.elements).filter((i) => !ids.includes(i) && !cur.elements[i].parentId).map((i) => elementRect(cur, i))
         const g = alignGuides(group, others, GUIDE_THRESHOLD / zoom)
         ddx += g.dx
         ddy += g.dy
@@ -152,6 +206,7 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       const cur = st()
       cur.setDragging(false)
       cur.setGuides([])
+      cur.setDropHint(null)
       if (!moved) {
         if (!e.shiftKey && wasSelected && ids.length > 1) cur.setSelection([id])
         return
@@ -160,24 +215,26 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       const sorted = [...ids].sort((a, b) => (cur.elements[a].z < cur.elements[b].z ? -1 : 1))
       const others = Object.values(cur.elements).filter((x) => !ids.includes(x.id)).map((x) => x.z)
       const zs = keysAfter(others, sorted.length)
-      const patches = sorted.map((i, k) => ({ id: i, patch: { z: zs[k] } }))
+      const patches: Record<string, Partial<CanvasElement>> = {}
+      sorted.forEach((i, k) => { patches[i] = { z: zs[k] } })
+      // Dropped on a card that takes drops (column): its patches (parentId, sortKey, width) win.
+      if (lastDrop) {
+        const target = cur.elements[lastDrop.id]
+        const dt = getCard(target.type)?.dropTarget
+        if (dt) {
+          const dragged = sorted.map((i) => cur.elements[i])
+          const dropped = dt.drop({ target, dragged, hint: lastDrop.hint })
+          for (const i in dropped) patches[i] = { ...patches[i], ...dropped[i] }
+        }
+      }
+      cur._patch(Object.entries(patches).map(([pid, patch]) => ({ id: pid, patch })))
       if (cloneMode) {
-        cur._patch(patches)
-        const finals = ids.map((i) => st().elements[i])
-        cur.commit(addCmd(finals))
+        cur.commit(addCmd(ids.map((i) => st().elements[i])))
         return
       }
-      const same = startIds.every((i) => cur.elements[i].x === startOrigins[i].x && cur.elements[i].y === startOrigins[i].y)
-      if (same) return
-      const afters: Record<string, Partial<CanvasElement>> = {}
-      sorted.forEach((i, k) => { afters[i] = { x: cur.elements[i].x, y: cur.elements[i].y, z: zs[k] } })
-      // before-state = original positions/z
-      const entries = patchEntries(cur.elements, afters).map((en) => ({
-        ...en,
-        before: { x: startOrigins[en.id].x, y: startOrigins[en.id].y, z: startOrigins[en.id].z },
-      }))
-      cur._patch(patches)
-      cur.commit(patchCmd('Move', entries))
+      const entries = startIds.map((i) => ({ id: i, before: before[i], after: pickMove(st().elements[i]) }))
+        .filter((en) => MOVE_KEYS.some((k) => en.before[k] !== en.after[k]))
+      if (entries.length) cur.commit(patchCmd('Move', entries))
     },
   )
   return true

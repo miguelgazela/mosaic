@@ -11,5 +11,9 @@ export interface CanvasElement {
   z: string
   /** Palette key '1'..'10' or null. */
   color: string | null
+  /** Column this card sits in; x/y are ignored while set. */
+  parentId: string | null
+  /** Fractional index inside the column. */
+  sortKey: string | null
   content: Record<string, unknown>
 }

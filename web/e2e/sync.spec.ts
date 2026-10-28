@@ -19,7 +19,9 @@ const saved = (page: Page) => expect(page.getByTestId('save-status')).toHaveAttr
 async function addCard(page: Page): Promise<string> {
   const before = new Set(await page.locator('[data-card-id]').evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id'))))
   await page.getByTestId('canvas').click({ position: { x: 600, y: 120 } })
-  await page.keyboard.press('d')
+  await page.keyboard.press('n')
+  await page.keyboard.type('sync test note')
+  await page.keyboard.press('Escape')
   const ids = await page.locator('[data-card-id]').evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id')!))
   const id = ids.find((i) => !before.has(i))
   expect(id).toBeTruthy()
