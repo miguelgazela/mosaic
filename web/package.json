@@ -24,6 +24,7 @@
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
     "fractional-indexing": "^4.0.0",
+    "heic2any": "^0.0.4",
     "immer": "^11.2.9",
     "lucide-react": "^1.63.0",
     "react": "^19.3.1",

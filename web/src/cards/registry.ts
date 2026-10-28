@@ -2,6 +2,8 @@ import type { CardDefinition } from './types'
 import { boardCard } from './board/boardCard'
 import { columnCard } from './column/columnCard'
 import { debugCard } from './debug/debugCard'
+import { fileCard } from './file/fileCard'
+import { imageCard } from './image/imageCard'
 import { noteCard } from './note/noteCard'
 import { swatchCard } from './swatch/swatchCard'
 import { todoCard } from './todo/TodoCard'
@@ -13,6 +15,8 @@ export const cardRegistry: Record<string, CardDefinition> = {
   board: boardCard,
   column: columnCard,
   swatch: swatchCard,
+  image: imageCard,
+  file: fileCard,
   ...(import.meta.env.DEV ? { debug: debugCard } : {}),
 }
 
