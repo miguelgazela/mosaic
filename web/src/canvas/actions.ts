@@ -2,8 +2,10 @@ import { newId } from '../lib/ids'
 import { getCard, listCards } from '../cards/registry'
 import type { PasteData } from '../cards/types'
 import { sortKeyAt, withChildren } from './columns'
-import { cloneElements, parseClipboard, serializeClipboard } from './clipboard'
-import { addCmd, patchCmd, patchEntries, removeCmd } from './commands'
+import { cloneElements, parseClipboard, parseClipboardConnections, serializeClipboard } from './clipboard'
+import { addCmd, addConnsCmd, patchCmd, patchConnCmd, patchEntries, removeCmd, removeConnsCmd } from './commands'
+import { cloneConnections, connectionsAmong, connectionsTouching, type Connection } from './connections'
+import { batch } from './undo'
 import { snap, type Point } from './geometry'
 import { keysAfter, keysBefore } from './order'
 import { selectedIds, useBoard } from './store'
@@ -80,8 +82,26 @@ export function moveSelectionInto(targetId: string): void {
 }
 
 export function deleteSelection(): void {
+  const s = st()
+  if (s.selectedConn && s.connections[s.selectedConn]) {
+    s.exec(removeConnsCmd([s.connections[s.selectedConn]]))
+    return
+  }
   const els = selectedWithChildren()
-  if (els.length) st().exec(removeCmd(els))
+  if (!els.length) return
+  // Lines attached to a deleted card go with it (and come back on undo).
+  const lines = connectionsTouching(Object.values(s.connections), new Set(els.map((e) => e.id)))
+  s.exec(lines.length ? batch('Delete', [removeCmd(els), removeConnsCmd(lines)]) : removeCmd(els))
+}
+
+/** Change the style, label or ends of one line (one undo step). */
+export function updateConnection(id: string, patch: Partial<Connection>, label = 'Edit line'): void {
+  const s = st()
+  const cur = s.connections[id]
+  if (!cur) return
+  const before: Record<string, unknown> = {}
+  for (const k of Object.keys(patch)) before[k] = cur[k as keyof Connection]
+  s.exec(patchConnCmd(label, [{ id, before: before as Partial<Connection>, after: patch }]))
 }
 
 export function selectAll(): void {
@@ -115,8 +135,9 @@ export function setColor(color: string | null): void {
   s.exec(patchCmd('Colour', patchEntries(s.elements, afters)))
 }
 
-function pasteItems(items: CanvasElement[], offset: number, stayInColumn = false): void {
-  const clones = cloneElements(items, { dx: offset, dy: offset }, newId, keysAfter(allZ(), items.length))
+function pasteItems(items: CanvasElement[], offset: number, stayInColumn = false, lines: Connection[] = []): void {
+  const idMap = new Map<string, string>()
+  const clones = cloneElements(items, { dx: offset, dy: offset }, newId, keysAfter(allZ(), items.length), idMap)
   if (stayInColumn) {
     // Duplicating a card that sits in a column: the copy goes right after it, in the same column.
     const sorted = [...items].sort((a, b) => (a.z < b.z ? -1 : 1))
@@ -129,12 +150,15 @@ function pasteItems(items: CanvasElement[], offset: number, stayInColumn = false
       c.sortKey = sortKeyAt(sibs.map((e) => e.sortKey), at + 1)
     })
   }
-  st().exec(addCmd(clones))
+  const copies = cloneConnections(lines, idMap, newId, { x: offset, y: offset })
+  st().exec(copies.length ? batch('Paste', [addCmd(clones), addConnsCmd(copies, false)]) : addCmd(clones))
 }
 
 export function duplicateSelection(): void {
   const items = selectedWithChildren()
-  if (items.length) pasteItems(items, 16, true)
+  if (!items.length) return
+  const lines = connectionsAmong(Object.values(st().connections), new Set(items.map((e) => e.id)))
+  pasteItems(items, 16, true, lines)
 }
 
 // --- clipboard: system clipboard JSON (via copy/cut/paste events) + in-memory fallback ---
@@ -147,7 +171,8 @@ let pasteCount = 0
 export function copySelection(): string | null {
   const els = selectedWithChildren()
   if (!els.length) return null
-  internalClipboard = serializeClipboard(els)
+  const lines = connectionsAmong(Object.values(st().connections), new Set(els.map((e) => e.id)))
+  internalClipboard = serializeClipboard(els, lines)
   pasteCount = 0
   return internalClipboard
 }
@@ -165,6 +190,6 @@ export function pasteClipboard(text: string | null | undefined): boolean {
   if (!items) return false
   if (source !== pasteText) { pasteText = source; pasteCount = 0 }
   pasteCount += 1
-  pasteItems(items, 16 * pasteCount)
+  pasteItems(items, 16 * pasteCount, false, parseClipboardConnections(source))
   return true
 }

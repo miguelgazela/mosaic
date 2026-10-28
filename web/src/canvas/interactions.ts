@@ -2,7 +2,10 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { newId } from '../lib/ids'
 import { getCard } from '../cards/registry'
 import type { DropHint } from '../cards/types'
-import { addCmd, patchCmd } from './commands'
+import { addCmd, addConnsCmd, patchCmd } from './commands'
+import { cloneConnections, connectionsAmong } from './connections'
+import { startLineFromCard } from './connectInteractions'
+import { batch } from './undo'
 import { clientToScreen, clientToWorld } from './canvasDom'
 import { alignGuides, boundsOf, rectFromPoints, rectsIntersect, resizeBox, snap, zoomAt, type Rect } from './geometry'
 import { keysAfter } from './order'
@@ -17,7 +20,7 @@ const GUIDE_THRESHOLD = 6
 type Ev = Pick<PointerEvent, 'clientX' | 'clientY' | 'altKey' | 'shiftKey'>
 
 /** Window-level pointer tracking with rAF-coalesced moves. The final move is flushed on release. */
-function track(onMove: (e: Ev) => void, onEnd: () => void): void {
+export function track(onMove: (e: Ev) => void, onEnd: () => void): void {
   let last: PointerEvent | null = null
   let raf = 0
   const frame = () => {
@@ -119,6 +122,7 @@ function dropTargetAt(ev: Ev, draggedIds: string[]): { id: string; hint: DropHin
 export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
   const s = st()
   if (e.button !== 0 || s.spaceHeld || s.tool === 'hand') return false
+  if (s.tool === 'line') return startLineFromCard(e, id)
   const wasSelected = !!s.selected[id]
   if (e.shiftKey) {
     const ids = selectedIds(s)
@@ -143,6 +147,7 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
   for (const i of startIds) before[i] = pickMove(st().elements[i])
   let moved = false
   let clones: CanvasElement[] = []
+  let cloneMap = new Map<string, string>()
   let lastDrop: { id: string; hint: DropHint } | null = null
 
   track(
@@ -167,6 +172,7 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
             }
           })
           cur._add(clones)
+          cloneMap = new Map(Object.entries(map))
           primary = map[id]
           ids = clones.map((c) => c.id)
           cur.setSelection(ids)
@@ -229,7 +235,13 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       }
       cur._patch(Object.entries(patches).map(([pid, patch]) => ({ id: pid, patch })))
       if (cloneMode) {
-        cur.commit(addCmd(ids.map((i) => st().elements[i])))
+        // Lines between the copied cards are copied too.
+        const lines = connectionsAmong(Object.values(cur.connections), new Set(cloneMap.keys()))
+        const shift = { x: cur.elements[primary].x - origins[primary].x, y: cur.elements[primary].y - origins[primary].y }
+        const copies = cloneConnections(lines, cloneMap, newId, shift)
+        cur._addConns(copies)
+        const added = addCmd(ids.map((i) => st().elements[i]))
+        cur.commit(copies.length ? batch('Duplicate', [added, addConnsCmd(copies, false)]) : added)
         return
       }
       const entries = startIds.map((i) => ({ id: i, before: before[i], after: pickMove(st().elements[i]) }))

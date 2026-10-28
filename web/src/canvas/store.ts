@@ -5,9 +5,21 @@ import type { DropHint } from '../cards/types'
 import { compareZ } from './order'
 import { rootOf } from './columns'
 import { UndoStack, type Command } from './undo'
+import type { Anchor, ConnEnd, Connection } from './connections'
 
-export type Tool = 'select' | 'hand'
+export type Tool = 'select' | 'hand' | 'line'
 export interface Patch { id: string; patch: Partial<CanvasElement> }
+export interface ConnPatch { id: string; patch: Partial<Connection> }
+
+/** A line being drawn or having an end dragged. `a` is the fixed end (world), `cursor` the moving end. */
+export interface Drawing {
+  fixed: ConnEnd
+  cursor: { x: number; y: number }
+  /** Card the moving end would attach to, with the anchor it would use. */
+  snap: { id: string; anchor: Anchor; rect: Rect } | null
+  /** Only highlight the snap target (an end of an existing line is being dragged; the line itself shows the preview). */
+  highlightOnly?: boolean
+}
 
 export const DEFAULT_AUTO_HEIGHT = 64
 
@@ -18,6 +30,13 @@ export interface BoardState {
   /** Measured heights for auto-height cards. */
   measured: Record<string, number>
   selected: Record<string, true>
+  connections: Record<string, Connection>
+  selectedConn: string | null
+  /** Line whose label is being typed. */
+  editingConn: string | null
+  drawing: Drawing | null
+  /** World rects of cards inside columns that lines attach to (measured from the DOM). */
+  childRects: Record<string, Rect>
   viewport: Viewport
   size: Size
   tool: Tool
@@ -36,7 +55,7 @@ export interface BoardState {
   canUndo: boolean
   canRedo: boolean
 
-  reset(els: CanvasElement[]): void
+  reset(els: CanvasElement[], conns?: Connection[]): void
   setViewport(vp: Viewport): void
   setSize(size: Size): void
   setTool(t: Tool): void
@@ -48,12 +67,19 @@ export interface BoardState {
   setEditing(id: string | null): void
   setDropHint(h: { targetId: string; hint: DropHint } | null): void
   setSelection(ids: string[]): void
+  selectConn(id: string | null): void
+  setEditingConn(id: string | null): void
+  setDrawing(d: Drawing | null): void
+  setChildRects(r: Record<string, Rect>): void
   reportHeight(id: string, h: number): void
 
   /** Raw mutators — only commands and live-drag code call these. */
   _add(els: CanvasElement[]): void
   _remove(ids: string[]): void
   _patch(patches: Patch[]): void
+  _addConns(conns: Connection[]): void
+  _removeConns(ids: string[]): void
+  _patchConns(patches: ConnPatch[]): void
 
   exec(c: Command): void
   /** Record an already-applied command. */
@@ -78,6 +104,11 @@ export const useBoard = create<BoardState>()((set, get) => {
     rank: {},
     measured: {},
     selected: {},
+    connections: {},
+    selectedConn: null,
+    editingConn: null,
+    drawing: null,
+    childRects: {},
     viewport: { x: 0, y: 0, zoom: 1 },
     size: { w: 1000, h: 700 },
     tool: 'select',
@@ -92,11 +123,16 @@ export const useBoard = create<BoardState>()((set, get) => {
     canUndo: false,
     canRedo: false,
 
-    reset(els) {
+    reset(els, conns = []) {
       history.clear()
       const elements: Record<string, CanvasElement> = {}
       for (const e of els) elements[e.id] = e
-      set({ elements, rank: computeRank(elements), measured: {}, selected: {}, marquee: null, editing: null, dropHint: null, ...flags() })
+      const connections: Record<string, Connection> = {}
+      for (const c of conns) connections[c.id] = c
+      set({
+        elements, rank: computeRank(elements), connections, measured: {}, childRects: {}, selected: {}, selectedConn: null,
+        editingConn: null, drawing: null, marquee: null, editing: null, dropHint: null, ...flags(),
+      })
     },
     setViewport: (viewport) => set({ viewport }),
     setSize: (size) => set({ size }),
@@ -118,8 +154,19 @@ export const useBoard = create<BoardState>()((set, get) => {
       const { elements } = get()
       const selected: Record<string, true> = {}
       for (const id of ids) if (elements[id]) selected[id] = true
-      set((s) => (s.editing && !selected[s.editing] ? { selected, editing: null } : { selected }))
+      set((s) => ({
+        selected,
+        selectedConn: null,
+        ...(s.editing && !selected[s.editing] ? { editing: null } : {}),
+        ...(s.editingConn ? { editingConn: null } : {}),
+      }))
     },
+    selectConn(id) {
+      set((s) => ({ selected: {}, selectedConn: id && s.connections[id] ? id : null, editing: null, editingConn: null }))
+    },
+    setEditingConn: (editingConn) => set({ editingConn }),
+    setDrawing: (drawing) => set({ drawing }),
+    setChildRects: (childRects) => set({ childRects }),
     reportHeight(id, h) {
       if (get().measured[id] === h) return
       set((s) => ({ measured: { ...s.measured, [id]: h } }))
@@ -157,6 +204,31 @@ export const useBoard = create<BoardState>()((set, get) => {
       })
     },
 
+    _addConns(conns) {
+      set((s) => {
+        const connections = { ...s.connections }
+        for (const c of conns) connections[c.id] = c
+        return { connections }
+      })
+    },
+    _removeConns(ids) {
+      set((s) => {
+        const connections = { ...s.connections }
+        for (const id of ids) delete connections[id]
+        return {
+          connections,
+          ...(s.selectedConn && !connections[s.selectedConn] ? { selectedConn: null, editingConn: null } : {}),
+        }
+      })
+    },
+    _patchConns(patches) {
+      set((s) => {
+        const connections = { ...s.connections }
+        for (const { id, patch } of patches) if (connections[id]) connections[id] = { ...connections[id], ...patch }
+        return { connections }
+      })
+    },
+
     exec(c) {
       history.exec(c)
       set(flags())
@@ -189,3 +261,6 @@ export const elementRect = (s: BoardState, id: string): Rect => {
   id = e.id
   return { x: e.x, y: e.y, w: e.width, h: elementHeight(s, id) }
 }
+
+// Dev/e2e aid: lets tests and the console read the store (never shipped).
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __board?: typeof useBoard }).__board = useBoard

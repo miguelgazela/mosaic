@@ -169,6 +169,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 **Design refs:** `00-connections`, `04-board-populated` (labelled curved arrow).
 **Done when:** arrows survive moving cards, column moves, copy/paste of connected cards; frames match.
 
+**Status:** built on `claude/p7-connections-3483dd`. Run `0005_connections_client_id.sql` (adds `connections.client_id`; without it lines load but saving them fails). Line tool is `L`; it returns to Select after one line. Follow-ups: lines are not in marquee selection or the right-click menu; no keyboard way to select a line; lines are not yet moved/duplicated by P8's board operations (`move_elements` RPC already moves lines between moved cards); queued line edits of *other* boards are not flushed at app start (only the open board's queue, unlike elements).
+
 ## P8 — Board management
 - `move_elements` RPC: drop selection onto board card, **Move to…** picker (board tree) — "Moved 3 cards to Ideas" toast with Undo.
 - `duplicate_board` RPC.

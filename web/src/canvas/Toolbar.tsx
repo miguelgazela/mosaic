@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Hand, MousePointer2, Trash2, Upload } from 'lucide-react'
+import { ArrowUpRight, Hand, MousePointer2, Trash2, Upload } from 'lucide-react'
 import { dropFiles } from '../features/upload/dropFiles'
 import { listCards } from '../cards/registry'
 import { Tooltip, toast } from '../ui'
@@ -46,6 +46,9 @@ function RailButton({ label, tip, shortcut, pressed, ...rest }: {
 export function Toolbar() {
   const tool = useBoard((s) => s.tool)
   const setTool = useBoard((s) => s.setTool)
+  const lineTile = (
+    <RailButton key="line" label="Line" tip="Draw a line" shortcut="L" pressed={tool === 'line'} icon={<ArrowUpRight size={18} />} onClick={() => setTool(tool === 'line' ? 'select' : 'line')} />
+  )
   const cards = listCards().filter((c) => c.toolbar)
   const picker = useRef<HTMLInputElement>(null)
   return (
@@ -60,7 +63,8 @@ export function Toolbar() {
       <hr className="my-1 w-8 border-[var(--divider)]" />
       {cards.map((c) => {
         const Icon = c.toolbar!.icon
-        return (
+        return [
+          c.type === 'board' ? lineTile : null,
           <RailButton
             key={c.type}
             label={c.toolbar!.label}
@@ -79,9 +83,10 @@ export function Toolbar() {
               const s = useBoard.getState()
               addCard(c.type, centerOfView(s.viewport, s.size))
             }}
-          />
-        )
+          />,
+        ]
       })}
+      {!cards.some((c) => c.type === 'board') && lineTile}
       <RailButton label="Upload" tip="Upload files" icon={<Upload size={18} />} onClick={() => picker.current?.click()} />
       <input
         ref={picker}

@@ -1,4 +1,5 @@
 import type { CanvasElement } from './types'
+import type { Connection } from './connections'
 import { useBoard } from './store'
 import type { Command } from './undo'
 
@@ -47,3 +48,35 @@ export function patchEntries(
     return [{ id, before: before as Partial<CanvasElement>, after }]
   })
 }
+
+// --- connections ------------------------------------------------------------------------
+
+export const addConnsCmd = (conns: Connection[], select = true): Command => {
+  const ids = conns.map((c) => c.id)
+  return {
+    label: 'Add line',
+    do: () => { st()._addConns(conns); if (select && ids.length === 1) st().selectConn(ids[0]) },
+    undo: () => st()._removeConns(ids),
+  }
+}
+
+export const removeConnsCmd = (conns: Connection[]): Command => {
+  const ids = conns.map((c) => c.id)
+  return {
+    label: 'Delete line',
+    do: () => st()._removeConns(ids),
+    undo: () => st()._addConns(conns),
+  }
+}
+
+export interface ConnPatchEntry {
+  id: string
+  before: Partial<Connection>
+  after: Partial<Connection>
+}
+
+export const patchConnCmd = (label: string, entries: ConnPatchEntry[]): Command => ({
+  label,
+  do: () => st()._patchConns(entries.map((e) => ({ id: e.id, patch: e.after }))),
+  undo: () => st()._patchConns(entries.map((e) => ({ id: e.id, patch: e.before }))),
+})

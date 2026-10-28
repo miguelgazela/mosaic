@@ -4,6 +4,8 @@ import type { QueueStorage } from './writeQueue'
 const DB = 'milanote-sync'
 const STORE = 'queue'
 const PREFIX = 'board:'
+/** Pending connection rows live under their own key so `flushAllQueued` (elements only) never mixes them up. */
+export const CONN_PREFIX = 'conn:'
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -28,11 +30,11 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
 }
 
 /** Pending rows for one board, kept in IndexedDB. No-op when IndexedDB is unavailable. */
-export function idbQueueStorage(boardId: string): QueueStorage {
-  const key = PREFIX + boardId
+export function idbQueueStorage<R extends { id: string } = ElementRow>(boardId: string, prefix = PREFIX): QueueStorage<R> {
+  const key = prefix + boardId
   if (typeof indexedDB === 'undefined') return { load: async () => [], save: async () => {} }
   return {
-    load: async () => (await tx<ElementRow[] | undefined>('readonly', (s) => s.get(key))) ?? [],
+    load: async () => (await tx<R[] | undefined>('readonly', (s) => s.get(key))) ?? [],
     save: async (rows) => {
       if (rows.length) await tx('readwrite', (s) => s.put(rows, key))
       else await tx('readwrite', (s) => s.delete(key))

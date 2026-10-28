@@ -45,7 +45,7 @@ export function useCanvasShortcuts(): void {
         const step = e.shiftKey ? 80 : 8
         nudge(x * step, y * step)
       } else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelection()
-      else if (e.key === 'Escape') st().setSelection([])
+      else if (e.key === 'Escape') { st().setSelection([]); if (st().tool === 'line') st().setTool('select') }
       else if (e.key === 'Enter' && st().editing === null && Object.keys(st().selected).length === 1) st().setEditing(Object.keys(st().selected)[0])
       else if (e.key === '+' || e.key === '=') zoomBy(1.25)
       else if (e.key === '-' || e.key === '_') zoomBy(1 / 1.25)
@@ -53,6 +53,7 @@ export function useCanvasShortcuts(): void {
       else if (e.code === 'Digit1' && e.shiftKey) fitToContent()
       else if (k === 'v') st().setTool('select')
       else if (k === 'h') st().setTool('hand')
+      else if (k === 'l') st().setTool('line')
       else if (e.key === ']') reorder(true)
       else if (e.key === '[') reorder(false)
       else if (getCardByShortcut(k)) {

@@ -3,6 +3,8 @@ import { addCard } from './actions'
 import { setCanvasEl, clientToScreen, clientToWorld } from './canvasDom'
 import { ContextMenu, type MenuState } from './ContextMenu'
 import { clamp, zoomAt } from './geometry'
+import { startLineFromCanvas } from './connectInteractions'
+import { ConnectionPopover } from './ConnectionPopover'
 import { createTouchGestures, startMarquee, startPan } from './interactions'
 import { GridBackground, MarqueeOverlay, WorldLayer } from './layers'
 import { useBoard } from './store'
@@ -25,6 +27,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
   const closeMenu = useCallback(() => setMenu(null), [])
   const grabbing = useBoard((s) => s.panning)
   const grab = useBoard((s) => s.spaceHeld || s.tool === 'hand')
+  const drawLine = useBoard((s) => s.tool === 'line')
 
   useEffect(() => {
     const node = ref.current!
@@ -61,7 +64,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       ref={ref}
       data-testid="canvas"
       className="relative h-full min-w-0 flex-1 touch-none select-none overflow-hidden bg-[var(--canvas-bg)]"
-      style={{ cursor: grabbing ? 'grabbing' : grab ? 'grab' : 'default' }}
+      style={{ cursor: grabbing ? 'grabbing' : grab ? 'grab' : drawLine ? 'crosshair' : 'default' }}
       onPointerDown={(e) => {
         setMenu(null)
         if (touch.down(e)) return
@@ -69,6 +72,8 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
         if (e.button === 1 || (e.button === 0 && (s.spaceHeld || s.tool === 'hand'))) {
           e.preventDefault()
           startPan(e)
+        } else if (e.button === 0 && s.tool === 'line') {
+          startLineFromCanvas(e)
         } else if (e.button === 0) {
           startMarquee(e)
         }
@@ -113,6 +118,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       <MarqueeOverlay />
       {!hideEmptyHint && <EmptyHint />}
       <SelectionToolbar />
+      <ConnectionPopover />
       {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}
       <DropZone />
       <ZoomControls />

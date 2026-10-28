@@ -1,14 +1,14 @@
 import type { ElementRow } from './rows'
 import type { SaveStatus } from './status'
 
-export interface QueueStorage {
-  load(): Promise<ElementRow[]>
-  save(rows: ElementRow[]): Promise<void>
+export interface QueueStorage<R extends { id: string } = ElementRow> {
+  load(): Promise<R[]>
+  save(rows: R[]): Promise<void>
 }
 
-export interface WriteQueueOptions {
-  send(rows: ElementRow[]): Promise<void>
-  storage: QueueStorage
+export interface WriteQueueOptions<R extends { id: string } = ElementRow> {
+  send(rows: R[]): Promise<void>
+  storage: QueueStorage<R>
   onStatus(s: SaveStatus): void
   isOnline(): boolean
   debounceMs?: number
@@ -20,28 +20,28 @@ export interface WriteQueueOptions {
  * Coalesces element writes (latest row per id wins), debounces, sends in batches,
  * persists pending rows so a reload/offline does not lose edits, retries with backoff.
  */
-export class WriteQueue {
-  private pending = new Map<string, ElementRow>()
+export class WriteQueue<R extends { id: string } = ElementRow> {
+  private pending = new Map<string, R>()
   private timer: ReturnType<typeof setTimeout> | null = null
   private inflight: Promise<void> | null = null
   private failures = 0
   private stopped = false
   private persistQueued = false
 
-  constructor(private o: WriteQueueOptions) {}
+  constructor(private o: WriteQueueOptions<R>) {}
 
   get size(): number { return this.pending.size }
   has(id: string): boolean { return this.pending.has(id) }
 
   /** Pull rows persisted by an earlier session into the queue (newer in-memory rows win). */
-  async restore(): Promise<ElementRow[]> {
+  async restore(): Promise<R[]> {
     const rows = await this.o.storage.load()
     for (const r of rows) if (!this.pending.has(r.id)) this.pending.set(r.id, r)
     if (rows.length) this.schedule(0)
     return rows
   }
 
-  enqueue(rows: ElementRow[]): void {
+  enqueue(rows: R[]): void {
     if (!rows.length || this.stopped) return
     for (const r of rows) this.pending.set(r.id, r)
     this.o.onStatus(this.busyStatus())

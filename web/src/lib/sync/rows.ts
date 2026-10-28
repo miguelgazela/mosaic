@@ -1,5 +1,6 @@
 import { getCard } from '../../cards/registry'
 import type { CanvasElement } from '../../canvas/types'
+import { defaultStyle, type Anchor, type ConnEnd, type Connection, type ConnStyle } from '../../canvas/connections'
 
 /** Subset of `milanote.elements` the canvas owns. */
 export interface ElementRow {
@@ -66,4 +67,72 @@ export function fromRow(r: ElementRow): CanvasElement {
 export function isNewer(incoming: string | undefined, known: string | undefined): boolean {
   if (!incoming || !known) return true
   return Date.parse(incoming) >= Date.parse(known)
+}
+
+/** Subset of `milanote.connections` the canvas owns. */
+export interface ConnRow {
+  id: string
+  board_id: string
+  from_element_id: string | null
+  to_element_id: string | null
+  /** `{side, t}` when attached, `{x, y}` when free. */
+  from_point: Record<string, unknown> | null
+  to_point: Record<string, unknown> | null
+  style: Partial<ConnStyle> & Record<string, unknown>
+  label: string | null
+  client_id: string | null
+  deleted_at: string | null
+  updated_at?: string
+}
+
+const SIDES = ['top', 'right', 'bottom', 'left']
+const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d)
+
+function endToRow(e: ConnEnd): { id: string | null; point: Record<string, unknown> | null } {
+  if (e.elementId) return { id: e.elementId, point: e.anchor ? { side: e.anchor.side, t: e.anchor.t } : null }
+  return { id: null, point: e.point ? { x: e.point.x, y: e.point.y } : null }
+}
+
+function endFromRow(id: string | null, p: Record<string, unknown> | null): ConnEnd {
+  if (id) {
+    const side = SIDES.includes(p?.side as string) ? (p!.side as Anchor['side']) : 'right'
+    return { elementId: id, anchor: { side, t: num(p?.t, 0.5) } }
+  }
+  return { elementId: null, point: { x: num(p?.x, 0), y: num(p?.y, 0) } }
+}
+
+export function toConnRow(c: Connection, boardId: string, clientId: string, deleted: boolean): ConnRow {
+  const from = endToRow(c.from)
+  const to = endToRow(c.to)
+  return {
+    id: c.id,
+    board_id: boardId,
+    from_element_id: from.id,
+    to_element_id: to.id,
+    from_point: from.point,
+    to_point: to.point,
+    style: { ...c.style },
+    label: c.label,
+    client_id: clientId,
+    deleted_at: deleted ? new Date().toISOString() : null,
+  }
+}
+
+export function fromConnRow(r: ConnRow): Connection {
+  const d = defaultStyle()
+  const st = r.style ?? {}
+  const bend = st.bend as { x?: unknown; y?: unknown } | undefined
+  return {
+    id: r.id,
+    from: endFromRow(r.from_element_id, r.from_point),
+    to: endFromRow(r.to_element_id, r.to_point),
+    style: {
+      curve: st.curve === 'curved' ? 'curved' : st.curve === 'straight' ? 'straight' : d.curve,
+      dash: typeof st.dash === 'boolean' ? st.dash : d.dash,
+      head: st.head === 'none' || st.head === 'start' || st.head === 'both' || st.head === 'end' ? st.head : d.head,
+      color: typeof st.color === 'string' ? st.color : d.color,
+      ...(bend && typeof bend.x === 'number' && typeof bend.y === 'number' ? { bend: { x: bend.x, y: bend.y } } : {}),
+    },
+    label: r.label ?? null,
+  }
 }

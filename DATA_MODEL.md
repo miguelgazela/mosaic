@@ -81,7 +81,10 @@ swatch: { hex: string; name?: string }
 | from_point / to_point | jsonb null | `{x,y}` when free, or `{side, t}` anchor on card |
 | style | jsonb | `{ curve: 'straight'|'curved', bend?: {x,y}, dash: bool, head: 'none'|'start'|'end'|'both', color }` |
 | label | text null | |
+| client_id | text null | (0005) id of the browser tab that wrote the row; the writer ignores its own Realtime echo |
 | created_at / updated_at / deleted_at | timestamptz | |
+
+Attached end: `*_element_id` set and `*_point = {side: 'top'|'right'|'bottom'|'left', t: 0..1}` (position along that side of the card). Free end: element null and `*_point = {x, y}` in world space. `style.bend` (curved lines) is the offset of the curve's midpoint from the middle of the chord, in world px; unset = default bow. Lines follow their cards (positions are never stored), including cards inside columns. Cards that are soft-deleted take their lines with them (the client soft-deletes both).
 
 ### shares
 | col | type | notes |
@@ -128,6 +131,7 @@ grant select on all tables in schema milanote to authenticated;
 ## Setup checklist (manual, once)
 
 1. SQL Editor → run `0001_init.sql`.
+   (Later migrations: `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync — run each once in the SQL Editor. Without 0005 lines still load, but saving them fails until it runs.)
 2. Settings → API → Exposed schemas → add `milanote` (keep existing entries).
 3. `insert into milanote.members (user_id, display_name) values ('<your auth uid>', 'Miguel');`
 4. Deploy edge functions; set secrets.
