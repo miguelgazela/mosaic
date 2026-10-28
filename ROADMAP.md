@@ -11,7 +11,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | Mockups | Done — 46 frames, see `design/README.md` |
 | D1 Design alignment | Done (`4421889`) |
 | P2 Persistence + sync | Done (`802cf37`); live check pending (see S1) |
-| S1 Stabilise D1 + P2 | Code done; **live Supabase check still to run** — needs a member account: `E2E_EMAIL=… E2E_PASSWORD=… npx playwright test sync` in `web/`, plus the offline check by hand |
+| S1 Stabilise D1 + P2 | Done except the manual offline-flush check. Live Supabase (`npx playwright test sync`): edit survives reload ✓, two tabs mirror ✓ (test allows 3 s; <1 s not timed). Offline edit flushes on reconnect: not yet checked by hand |
 | P3 … P12 | Not started |
 
 ## Dependency graph
