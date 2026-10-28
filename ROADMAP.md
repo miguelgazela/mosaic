@@ -17,18 +17,22 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 ## Dependency graph
 
 ```
-P0 ✓ ─ P1 ✓ ─ D1 Design alignment ─ P2 Persistence + sync ─ S1 Stabilise
-                                     ├─ P3 Notes, columns, boards, swatch ─┐
-                                     ├─ P4 Images + files                   │  (parallel: separate card folders)
-                                     ├─ P5 Links + unfurl fn                │
-                                     ├─ P6 To-dos + Tasks view              │
-                                     └─ P7 Connections (arrows)            ─┘
-                                          └─ P8 Boards mgmt: move, duplicate, trash
-                                               ├─ P9  Share links + read-only ─┐
-                                               ├─ P10 Search                   │  (parallel)
-                                               └─ P11 Export                  ─┘
-                                                    └─ P12 Polish, phone, perf, PWA
+P0 ✓ ─ P1 ✓ ─ D1 ✓ ─ P2 ✓ ─ S1 ✓
+                             ├─ Wave A (parallel): P3 Notes, columns, boards, swatch  +  P6 To-dos + Tasks view
+                             │     merge P3, then P6 (rebased)
+                             └─ Wave B (parallel, after Wave A merged): P4 Images + files  +  P5 Links  +  P7 Connections
+                                   merge P4, P5, then P7 (each rebased)
+                                   └─ P8 Boards mgmt: move, duplicate, trash
+                                        ├─ P9  Share links + read-only ─┐
+                                        ├─ P10 Search                   │  (parallel)
+                                        └─ P11 Export                  ─┘
+                                             └─ P12 Polish, phone, perf, PWA
 ```
+
+Why waves (checked against the code after S1):
+- P3 and P7 both rework engine files (`canvas/interactions.ts`, `CardShell.tsx`, `store.ts`, `lib/sync/`): columns change how card positions work, and arrows need those positions. They must not run together.
+- P3 adds the engine extension points the card phases need: `onPaste` on `CardDefinition` (text / URL / image routing, used by P3 notes, P4 images, P5 links) and a drop-target API (columns, board cards). P4 and P5 then only register hooks.
+- P6 is mostly self-contained (`cards/todo/`, `features/tasks/`, a route, migration 0004), so it runs beside P3.
 
 ### Rules for running sessions
 
@@ -36,7 +40,7 @@ P0 ✓ ─ P1 ✓ ─ D1 Design alignment ─ P2 Persistence + sync ─ S1 Stabi
 - **Commit before the next phase starts.** Each phase ends with its own commit (or merged branch) on `main`; the next phase starts from that commit.
 - **Sequential when phases share files.** D1 → P2 had to be sequential: both edit `BoardPage.tsx`, `TopBar`, `SaveStatus`, `CanvasView.tsx`. Treat a phase as parallel-safe only if it does not touch `app/`, `canvas/` or `lib/sync/` beyond one-line registrations.
 - **Parallel groups merge one at a time.** For P3–P7 and P9–P11: each in its own worktree, merged into `main` in order (lowest number first); later branches rebase onto `main` before merging.
-- P3–P7 each own `web/src/cards/<type>/` plus a reserved migration number (P4=0002, P5=0003, P6=0004, P7=0005). Shared files (`cards/registry.ts`, `Toolbar.tsx`, `ContextMenu.tsx`) — one-line edits only; anything bigger, stop and note it as a follow-up for the merge.
+- Within a wave, phases each own `web/src/cards/<type>/` plus a reserved migration number (P4=0002, P5=0003, P6=0004, P7=0005). Shared files (`cards/registry.ts`, `Toolbar.tsx`, `ContextMenu.tsx`) — one-line edits only; anything bigger, stop and note it as a follow-up for the merge.
 
 ## How to use the designs (every phase with UI)
 
@@ -106,12 +110,16 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - Colour swatch card: hex, optional name, click copies (with "Copied" state).
 - Card colour picker (shared, `00-pickers`).
 - Home: empty state with onboarding hint.
+- **Engine extension points for Wave B** (P3 owns these engine changes):
+  - `onPaste?: (data: { text?: string; url?: string; files?: File[] }, at) => boolean` on `CardDefinition`; the engine's paste handler asks each registered card in turn, falling back to a note for plain text. P4 (images) and P5 (links) only register a hook.
+  - Drop-target API on `CardDefinition` (used by columns and board cards; P8 reuses it for move-to-board).
+  - Replace the `debug` card's mapping to a `note` row (added in S1) with the real note card; keep `debug` dev-only.
 
 **Design refs:** `00-card-note`, `00-card-column`, `00-card-board-and-swatch`, `00-card-shared-states`, `00-pickers` (card colour, board icon + colour), `04-board-populated`, `04-board-drag-into-column`, `03-home-empty`.
 **Done when:** can build nested boards with columns of notes and swatches; all persists; frames match.
 
 ## P4 — Images + files
-- Upload pipeline: drag-drop from desktop (drop-zone overlay), paste, tool rail Upload; HEIC convert, resize 2560, thumb 512; uploading + failed (retry) states.
+- Upload pipeline: drag-drop from desktop (drop-zone overlay), paste (via P3's `onPaste` hook), tool rail Upload; HEIC convert, resize 2560, thumb 512; uploading + failed (retry) states.
 - Image card: aspect-locked resize, caption, lightbox (default + loading), download. Thumb below 100 % zoom.
 - File card: icon, name, size, download; PDF first-page preview optional.
 - Signed URL cache + batch fetch on board open; image placeholders while loading.
@@ -123,7 +131,7 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 ## P5 — Links + `milanote-unfurl`
 - Edge function: OG/Twitter meta + oEmbed for YouTube/Vimeo, SSRF guard, timeout, size cap; tests.
 - Link card: full preview, text-only, loading, failed (plain URL), video before play + playing; edit URL. Text links use `--link`, not `--teal`.
-- Paste URL anywhere → link card.
+- Paste URL anywhere → link card, via the `onPaste` hook P3 added (no engine edits).
 
 **Design refs:** `00-card-link`, `00-empty-and-loading` (link placeholder).
 **Done when:** common sites (YouTube, GitHub, news, Pinterest) unfurl; private IPs rejected; frames match.
@@ -131,6 +139,7 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 ## P6 — To-dos + Tasks view
 - To-do card: title, items, check, reorder, progress bar + "2/4", due date chip (upcoming / Today / Overdue — icon + word, never colour alone), due date picker, hide completed, colour. Shortcut T.
 - `tasks()` RPC + `/tasks` page grouped Overdue / Today / Upcoming / No date; check from list; jump to card with highlight flash; empty state.
+- Runs beside P3 (Wave A), so stay out of engine files: item text is a plain text input (no TipTap — P3 adds it); jump-to-card uses a `?card=<id>` URL param read in a new `canvas/focus.ts` plus one line in `CanvasView.tsx`; migration `0004`.
 
 **Design refs:** `00-card-todo`, `05-tasks-populated`, `05-tasks-empty`, `00-toasts-banner-highlight` (highlight flash).
 **Done when:** due items from nested boards appear in Tasks; toggling syncs both ways; frames match.
