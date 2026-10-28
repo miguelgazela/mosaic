@@ -1,4 +1,4 @@
-# Milanote clone — web
+# Mosaic — web
 
 ```bash
 cp .env.example .env   # add VITE_SUPABASE_ANON_KEY

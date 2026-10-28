@@ -1,4 +1,4 @@
-# Milanote Clone — Requirements (v1)
+# Mosaic — Requirements (v1)
 
 Visual board app for organising ideas: a free-form canvas of notes, images, links, to-dos, columns and nested boards. Goal: feel as close as possible to Milanote on desktop web.
 

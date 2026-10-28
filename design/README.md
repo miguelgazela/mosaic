@@ -19,7 +19,7 @@ Mockup canvas (46 frames, 7 pages): https://claude.ai/artifact/QkoK7NutqreJEkX3m
    - Primary violet `--primary` `#7C3AED`: selection outline, focus ring, primary buttons, snap guides, marquee, drop targets.
    - Accent teal `--teal` `#0891B2` for graphics only. Text links use `--link` `#0E7490`, because `#0891B2` is only 3.7:1 on white.
    - Font: Plus Jakarta Sans (400/500/600/700) for everything. **Load it in `web/index.html`** (Google Fonts `css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap`). Until then the system UI font shows.
-2. **Layout follows Milanote conventions with an original identity.** Warm-grey dotted canvas, white cards, labelled tool rail on the left, breadcrumbs on top, zoom bottom-right. No Milanote logo, wordmark or assets. The product name is a placeholder, `[App name]`.
+2. **Layout follows Milanote conventions with an original identity.** Warm-grey dotted canvas, white cards, labelled tool rail on the left, breadcrumbs on top, zoom bottom-right. No Milanote logo, wordmark or assets. The product name is **Mosaic**.
 3. **Accessibility rules (from ui-ux-pro-max):**
    - Text contrast at least 4.5:1. `--text-muted` is the lightest text colour; `--icon-subtle` is never used for text.
    - Never colour alone: overdue / today due dates carry an icon and a word ("Overdue, Mar 10", "Today").

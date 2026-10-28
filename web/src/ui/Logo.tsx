@@ -17,7 +17,7 @@ export function Wordmark() {
   return (
     <div className="flex items-center gap-3">
       <LogoMark size={36} />
-      <span className="text-[length:var(--text-h3)] font-bold">[App name]</span>
+      <span className="text-[length:var(--text-h3)] font-bold">Mosaic</span>
     </div>
   )
 }

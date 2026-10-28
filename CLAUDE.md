@@ -1,4 +1,4 @@
-# Milanote Clone
+# Mosaic (Milanote clone)
 
 Web clone of Milanote. Read before working:
 - `REQUIREMENTS.md` — what to build (FR numbers).
