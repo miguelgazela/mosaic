@@ -1,0 +1,19 @@
+/* Highlight flash after jumping to a card (Search, Tasks): ring fades over --dur-highlight. */
+@keyframes card-flash {
+  0%   { box-shadow: 0 0 0 2px var(--primary), 0 0 0 8px var(--primary-soft); }
+  50%  { box-shadow: 0 0 0 2px var(--primary), 0 0 0 4px var(--primary-soft); }
+  100% { box-shadow: 0 0 0 2px transparent, 0 0 0 4px transparent; }
+}
+@keyframes card-flash-hold { 0%, 99% { box-shadow: 0 0 0 2px var(--primary); } 100% { box-shadow: none; } }
+[data-card-id][data-flash='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-card);
+  pointer-events: none;
+  animation: card-flash var(--dur-highlight) var(--ease-out) forwards;
+}
+/* Reduced motion: ring stays 1.2 s, then disappears (tokens zero --dur-highlight, so spell it out). */
+@media (prefers-reduced-motion: reduce) {
+  [data-card-id][data-flash='true']::after { animation: card-flash-hold 1200ms steps(1, end) forwards; }
+}

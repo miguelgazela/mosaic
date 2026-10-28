@@ -107,7 +107,8 @@ No `anon` grants — shared view goes through `milanote-share` edge function (se
 | `duplicate_board(board uuid, target_parent uuid)` | deep copy tree; file paths reused (storage objects shared; purge checks references) |
 | `trash_board(board uuid)` / `restore_board(board uuid)` | soft delete / restore subtree |
 | `search(q text, lim int)` | elements + boards hits with `ts_headline` and board breadcrumb path |
-| `tasks()` | flatten todo items with due dates across boards: `jsonb_array_elements(content->'items')` |
+| `tasks()` | (0004) every item of live to-do cards on live boards, flattened via `jsonb_array_elements(content->'items')`: `element_id, board_id, board_path jsonb, card_title, item_id, item_text, done, due (ISO date text or null), item_pos`. Client groups Overdue / Today / Upcoming / No date |
+| `set_task_done(p_element uuid, p_item text, p_done boolean)` | (0004) flip one item's `done` in place; clears `client_id` so open boards apply the Realtime update |
 | `board_path(board uuid)` | recursive CTE → breadcrumb array |
 
 ## Storage

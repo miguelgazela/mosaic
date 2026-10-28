@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle2, Keyboard, LogOut, Search, Trash2 } from 'lucide-react'
 import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel, toast } from '../ui'
 import { Popover } from '../ui/Popover'
@@ -18,6 +18,7 @@ export interface TopBarProps {
 }
 
 export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut }: TopBarProps) {
+  const navigate = useNavigate()
   return (
     <header
       className="flex shrink-0 items-center gap-2 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-4"
@@ -34,7 +35,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
         <Search size={16} /> <span className="flex-1 text-left">Search</span>
         <kbd className="rounded-[var(--radius-chip)] bg-[var(--fill-hover)] px-1.5 text-[length:var(--text-caption)] font-medium">⌘K</kbd>
       </button>
-      <Button variant="ghost" onClick={soon('Tasks')}><CheckCircle2 size={16} /> Tasks</Button>
+      <Button variant="ghost" onClick={() => navigate('/tasks')}><CheckCircle2 size={16} /> Tasks</Button>
       <Button variant="primary" onClick={soon('Sharing')}>Share</Button>
       <Popover
         align="right"

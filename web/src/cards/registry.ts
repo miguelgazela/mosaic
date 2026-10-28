@@ -1,9 +1,11 @@
 import type { CardDefinition } from './types'
 import { debugCard } from './debug/debugCard'
+import { todoCard } from './todo/TodoCard'
 
 // One line per card type.
 export const cardRegistry: Record<string, CardDefinition> = {
   debug: debugCard,
+  todo: todoCard,
 }
 
 export const getCard = (type: string): CardDefinition | undefined => cardRegistry[type]
