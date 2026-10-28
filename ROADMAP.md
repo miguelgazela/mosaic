@@ -12,7 +12,18 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | D1 Design alignment | Done (`4421889`) |
 | P2 Persistence + sync | Done (`802cf37`); live check pending (see S1) |
 | S1 Stabilise D1 + P2 | Done except the manual offline-flush check. Live Supabase (`npx playwright test sync`): edit survives reload ✓, two tabs mirror ✓ (test allows 3 s; <1 s not timed). Offline edit flushes on reconnect: not yet checked by hand |
-| P3 … P12 | Not started |
+| P3 Notes, columns, boards, swatch | Done (`da9ad34`, Wave A). Not checked against live Supabase |
+| P6 To-dos + Tasks view | Done (`0df4aaf`, merged `cb35203`, Wave A). Migration `0004_tasks.sql` must be run in the SQL Editor; not checked live |
+| Wave B: P4, P5, P7 | Next — start from `main` at or after `cb35203` |
+| P8 … P12 | Not started |
+
+### Open follow-ups
+
+- **Live checks (before or during Wave B):** run `0004_tasks.sql`; then by hand on the real project: create a child board, a column of notes, reload (P3 writes `parent_id`/`sort_key`); to-do with due date shows on `/tasks` and checking it there updates the open board (P6); offline edit flushes on reconnect (S1).
+- **P8:** copy/paste or duplicate of a board card shares the same child board — duplicate must deep-copy. Board cards don't register the `dropTarget` hook yet; P8 registers it for move-to-board.
+- **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
+- **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
+- **Parallel testing:** run Playwright with `E2E_PORT=<free port> npx playwright test` so a session never tests another worktree's dev server.
 
 ## Dependency graph
 
