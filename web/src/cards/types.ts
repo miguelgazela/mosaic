@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import type { CanvasElement } from '../canvas/types'
 
 export interface CardProps {
@@ -19,8 +20,12 @@ export interface CardDefinition {
   minWidth: number
   minHeight: number
   defaultContent?: () => Record<string, unknown>
-  /** Shown in the left toolbar when set. */
-  toolbar?: { label: string }
+  /** Single-key shortcut (FR-50), e.g. 'N'. Also shown in tooltips and the canvas menu. */
+  shortcut?: string
+  /** false for card types without a colour (links, images, files). Default true. */
+  colorable?: boolean
+  /** Shown in the left tool rail when set. Label is 12 px under a Lucide icon. */
+  toolbar?: { label: string; icon: LucideIcon }
   toPlainText(el: CanvasElement): string
   toMarkdown(el: CanvasElement): string
   onDropFiles?: (files: File[], at: { x: number; y: number }) => void

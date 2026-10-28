@@ -91,3 +91,54 @@ export function resizeBox(origin: { w: number; h: number }, d: { dx: number; dy:
   const h = o.axis === 'xy' ? Math.max(o.minH, maybeSnap(origin.h + d.dy, o.snap)) : origin.h
   return { w, h }
 }
+
+export interface Guide {
+  /** 'v' = vertical line at x = pos; 'h' = horizontal line at y = pos. */
+  axis: 'v' | 'h'
+  pos: number
+  /** Extent along the other axis. */
+  from: number
+  to: number
+}
+
+const anchors = (lo: number, size: number): number[] => [lo, lo + size / 2, lo + size]
+
+function bestOffset(mine: number[], theirs: number[], threshold: number): number {
+  let best = 0
+  let bestAbs = Infinity
+  for (const m of mine) {
+    for (const t of theirs) {
+      const d = t - m
+      if (Math.abs(d) <= threshold && Math.abs(d) < bestAbs) { best = d; bestAbs = Math.abs(d) }
+    }
+  }
+  return bestAbs === Infinity ? 0 : best
+}
+
+/**
+ * Snap guides (FR-53): when an edge or centre of `moving` is within `threshold` of an edge or
+ * centre of another rect, return the offset that aligns them and the lines to draw.
+ */
+export function alignGuides(moving: Rect, others: Rect[], threshold: number): { dx: number; dy: number; guides: Guide[] } {
+  const xs = others.flatMap((o) => anchors(o.x, o.w))
+  const ys = others.flatMap((o) => anchors(o.y, o.h))
+  const dx = bestOffset(anchors(moving.x, moving.w), xs, threshold)
+  const dy = bestOffset(anchors(moving.y, moving.h), ys, threshold)
+  const m = { ...moving, x: moving.x + dx, y: moving.y + dy }
+  const EPS = 0.5
+  const lines = new Map<string, Guide>()
+  const add = (axis: 'v' | 'h', pos: number, from: number, to: number) => {
+    const key = `${axis}${Math.round(pos * 2)}`
+    const cur = lines.get(key)
+    if (cur) { cur.from = Math.min(cur.from, from); cur.to = Math.max(cur.to, to) } else lines.set(key, { axis, pos, from, to })
+  }
+  for (const o of others) {
+    const top = Math.min(m.y, o.y)
+    const bottom = Math.max(m.y + m.h, o.y + o.h)
+    const left = Math.min(m.x, o.x)
+    const right = Math.max(m.x + m.w, o.x + o.w)
+    for (const a of anchors(m.x, m.w)) for (const b of anchors(o.x, o.w)) if (Math.abs(a - b) < EPS) add('v', b, top, bottom)
+    for (const a of anchors(m.y, m.h)) for (const b of anchors(o.y, o.h)) if (Math.abs(a - b) < EPS) add('h', b, left, right)
+  }
+  return { dx, dy, guides: [...lines.values()] }
+}

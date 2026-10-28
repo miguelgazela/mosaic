@@ -6,6 +6,10 @@ import { RequireMember } from '../auth/RequireMember'
 import { HomeRedirect } from './HomeRedirect'
 import { BoardPage } from './BoardPage'
 import { DevCanvasPage } from './DevCanvasPage'
+import { DevBoardPage } from './DevBoardPage'
+import { NotFoundPage } from './NotFoundPage'
+import { NotMember } from '../auth/NotMember'
+import { ToastHost } from '../ui'
 
 const queryClient = new QueryClient()
 
@@ -19,7 +23,11 @@ export function App() {
             <Route path="/" element={<RequireMember><HomeRedirect /></RequireMember>} />
             <Route path="/b/:boardId" element={<RequireMember><BoardPage /></RequireMember>} />
             {import.meta.env.DEV && <Route path="/dev/canvas" element={<DevCanvasPage />} />}
+            {import.meta.env.DEV && <Route path="/dev/board/:boardId" element={<DevBoardPage />} />}
+            {import.meta.env.DEV && <Route path="/dev/not-member" element={<NotMember />} />}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          <ToastHost />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

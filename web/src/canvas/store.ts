@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { CanvasElement } from './types'
-import type { Rect, Size, Viewport } from './geometry'
+import type { Guide, Rect, Size, Viewport } from './geometry'
 import { compareZ } from './order'
 import { UndoStack, type Command } from './undo'
 
@@ -23,6 +23,7 @@ export interface BoardState {
   dragging: boolean
   panning: boolean
   marquee: Rect | null
+  guides: Guide[]
   canUndo: boolean
   canRedo: boolean
 
@@ -34,6 +35,7 @@ export interface BoardState {
   setDragging(v: boolean): void
   setPanning(v: boolean): void
   setMarquee(r: Rect | null): void
+  setGuides(g: Guide[]): void
   setSelection(ids: string[]): void
   reportHeight(id: string, h: number): void
 
@@ -72,6 +74,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     dragging: false,
     panning: false,
     marquee: null,
+    guides: [],
     canUndo: false,
     canRedo: false,
 
@@ -88,6 +91,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     setDragging: (dragging) => set({ dragging }),
     setPanning: (panning) => set({ panning }),
     setMarquee: (marquee) => set({ marquee }),
+    setGuides: (guides) => set((s) => (guides.length === 0 && s.guides.length === 0 ? s : { guides })),
     setSelection(ids) {
       const { elements } = get()
       const selected: Record<string, true> = {}

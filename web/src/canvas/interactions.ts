@@ -3,13 +3,15 @@ import { newId } from '../lib/ids'
 import { getCard } from '../cards/registry'
 import { addCmd, patchCmd, patchEntries } from './commands'
 import { clientToScreen, clientToWorld } from './canvasDom'
-import { rectFromPoints, rectsIntersect, resizeBox, snap, zoomAt, type Rect } from './geometry'
+import { alignGuides, boundsOf, rectFromPoints, rectsIntersect, resizeBox, snap, zoomAt, type Rect } from './geometry'
 import { keysAfter } from './order'
 import { elementHeight, elementRect, selectedIds, useBoard } from './store'
 import type { CanvasElement } from './types'
 
 const st = () => useBoard.getState()
 const DRAG_THRESHOLD = 3
+/** Screen px within which edges/centres snap to other cards. */
+const GUIDE_THRESHOLD = 6
 
 type Ev = Pick<PointerEvent, 'clientX' | 'clientY' | 'altKey' | 'shiftKey'>
 
@@ -133,13 +135,23 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       const dy = (ev.clientY - sy) / zoom
       const o = origins[primary]
       const doSnap = cloneMode || !ev.altKey
-      const ddx = (doSnap ? snap(o.x + dx) : o.x + dx) - o.x
-      const ddy = (doSnap ? snap(o.y + dy) : o.y + dy) - o.y
+      let ddx = (doSnap ? snap(o.x + dx) : o.x + dx) - o.x
+      let ddy = (doSnap ? snap(o.y + dy) : o.y + dy) - o.y
+      if (doSnap) {
+        // Snap guides: align edges/centres of the moving group with other cards.
+        const group = boundsOf(ids.map((i) => ({ ...elementRect(cur, i), x: origins[i].x + ddx, y: origins[i].y + ddy })))!
+        const others = Object.keys(cur.elements).filter((i) => !ids.includes(i)).map((i) => elementRect(cur, i))
+        const g = alignGuides(group, others, GUIDE_THRESHOLD / zoom)
+        ddx += g.dx
+        ddy += g.dy
+        cur.setGuides(g.guides)
+      } else cur.setGuides([])
       cur._patch(ids.map((i) => ({ id: i, patch: { x: origins[i].x + ddx, y: origins[i].y + ddy } })))
     },
     () => {
       const cur = st()
       cur.setDragging(false)
+      cur.setGuides([])
       if (!moved) {
         if (!e.shiftKey && wasSelected && ids.length > 1) cur.setSelection([id])
         return

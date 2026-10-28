@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthProvider'
 import { NotMember } from './NotMember'
+import { FullPageMessage } from '../ui/FullPageMessage'
 
 export function RequireMember({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -17,9 +18,9 @@ export function RequireMember({ children }: { children: ReactNode }) {
     },
   })
 
-  if (loading || (session && member.isPending)) return <p className="p-6 text-sm">Loading…</p>
+  if (loading || (session && member.isPending)) return <FullPageMessage>Loading…</FullPageMessage>
   if (!session) return <Navigate to="/login" replace />
-  if (member.isError) return <p className="p-6 text-sm">Could not check access: {member.error.message}</p>
+  if (member.isError) return <FullPageMessage>Could not check access: {member.error.message}</FullPageMessage>
   if (!member.data) return <NotMember />
   return <>{children}</>
 }

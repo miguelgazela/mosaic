@@ -1,46 +1,43 @@
-import { useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
+import { MenuDivider, MenuItem, MenuPanel } from '../ui'
+import { Popover } from '../ui/Popover'
 import { useBoard } from './store'
 import { fitToContent, zoomBy, zoomTo } from './viewport'
 
-const LEVELS = [0.25, 0.5, 1, 2, 4]
-const btn = 'h-8 min-w-8 rounded-[var(--radius-ui)] px-2 text-[length:var(--text-sm)] hover:bg-black/5'
+const LEVELS = [0.25, 0.5, 1, 2]
+const btn =
+  'flex h-8 items-center justify-center rounded-[var(--radius-ui)] text-[length:var(--text-sm)] font-medium hover:bg-[var(--fill-hover)] active:bg-[var(--fill-pressed)]'
 
 export function ZoomControls() {
   const zoom = useBoard((s) => s.viewport.zoom)
-  const canUndo = useBoard((s) => s.canUndo)
-  const canRedo = useBoard((s) => s.canRedo)
-  const [open, setOpen] = useState(false)
+  const pct = Math.round(zoom * 100)
   return (
     <div
-      className="absolute bottom-3 right-3 flex items-center gap-1 rounded-xl border bg-white p-1"
-      style={{ boxShadow: 'var(--shadow-card)', borderColor: 'var(--border)' }}
+      className="absolute bottom-4 right-4 flex items-center gap-0.5 rounded-[var(--radius-menu)] border border-[var(--chrome-border)] bg-[var(--card-bg)] p-1"
+      style={{ boxShadow: 'var(--shadow-card)' }}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <button className={btn} disabled={!canUndo} onClick={() => useBoard.getState().undo()} title="Undo (⌘Z)">↶</button>
-      <button className={btn} disabled={!canRedo} onClick={() => useBoard.getState().redo()} title="Redo (⇧⌘Z)">↷</button>
-      <span className="mx-1 h-5 w-px bg-black/10" />
-      <button className={btn} aria-label="Zoom out" onClick={() => zoomBy(1 / 1.25)}>−</button>
-      <div className="relative">
-        <button className={btn} aria-label="Zoom level" data-testid="zoom-level" onClick={() => setOpen((o) => !o)}>
-          {Math.round(zoom * 100)}%
-        </button>
-        {open && (
-          <div
-            className="absolute bottom-10 right-0 w-36 rounded-xl border bg-white p-1"
-            style={{ boxShadow: 'var(--shadow-card-hover)', borderColor: 'var(--border)' }}
-          >
-            {LEVELS.map((l) => (
-              <button key={l} className={`${btn} block w-full text-left`} onClick={() => { zoomTo(l); setOpen(false) }}>
-                {l * 100}%
-              </button>
-            ))}
-            <button className={`${btn} block w-full text-left`} onClick={() => { fitToContent(); setOpen(false) }}>
-              Fit to content
-            </button>
-          </div>
+      <button className={`${btn} w-8`} aria-label="Zoom out" onClick={() => zoomBy(1 / 1.25)}><Minus size={16} /></button>
+      <Popover
+        up
+        align="right"
+        trigger={({ toggle }) => (
+          <button className={`${btn} w-14`} aria-label="Zoom level" aria-haspopup="menu" data-testid="zoom-level" onClick={toggle}>
+            {pct}%
+          </button>
         )}
-      </div>
-      <button className={btn} aria-label="Zoom in" onClick={() => zoomBy(1.25)}>+</button>
+      >
+        {(close) => (
+          <MenuPanel className="w-[192px]" onClose={close} label="Zoom">
+            {LEVELS.map((l) => (
+              <MenuItem key={l} checked={pct === l * 100} onClick={() => { zoomTo(l); close() }}>{l * 100}%</MenuItem>
+            ))}
+            <MenuDivider />
+            <MenuItem shortcut="⇧1" onClick={() => { fitToContent(); close() }}>Fit to content</MenuItem>
+          </MenuPanel>
+        )}
+      </Popover>
+      <button className={`${btn} w-8`} aria-label="Zoom in" onClick={() => zoomBy(1.25)}><Plus size={16} /></button>
     </div>
   )
 }

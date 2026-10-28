@@ -6,7 +6,10 @@ import { clamp, zoomAt } from './geometry'
 import { createTouchGestures, startMarquee, startPan } from './interactions'
 import { GridBackground, MarqueeOverlay, WorldLayer } from './layers'
 import { useBoard } from './store'
-import { Toolbar, DRAG_MIME } from './Toolbar'
+import { Toolbar, DRAG_MIME, getDraggedTool } from './Toolbar'
+import { getCard } from '../cards/registry'
+import { EmptyHint } from './EmptyHint'
+import { SelectionToolbar } from './SelectionToolbar'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { ZoomControls } from './ZoomControls'
 
@@ -15,6 +18,7 @@ export function CanvasView() {
   const ref = useRef<HTMLDivElement>(null)
   const touch = useRef(createTouchGestures()).current
   const [menu, setMenu] = useState<MenuState | null>(null)
+  const [ghost, setGhost] = useState<{ type: string; x: number; y: number } | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
   const grabbing = useBoard((s) => s.panning)
   const grab = useBoard((s) => s.spaceHeld || s.tool === 'hand')
@@ -48,10 +52,12 @@ export function CanvasView() {
   }, [])
 
   return (
+    <div className="flex h-full w-full">
+    <Toolbar />
     <div
       ref={ref}
       data-testid="canvas"
-      className="relative h-full w-full touch-none select-none overflow-hidden"
+      className="relative h-full min-w-0 flex-1 touch-none select-none overflow-hidden bg-[var(--canvas-bg)]"
       style={{ cursor: grabbing ? 'grabbing' : grab ? 'grab' : 'default' }}
       onPointerDown={(e) => {
         setMenu(null)
@@ -78,9 +84,16 @@ export function CanvasView() {
         setMenu({ x: e.clientX, y: e.clientY, world: clientToWorld(e.clientX, e.clientY), onCard: !!card })
       }}
       onDragOver={(e) => {
-        if (e.dataTransfer.types.includes(DRAG_MIME)) e.preventDefault()
+        if (!e.dataTransfer.types.includes(DRAG_MIME)) return
+        e.preventDefault()
+        const type = getDraggedTool()
+        if (type) setGhost({ type, ...clientToScreen(e.clientX, e.clientY) })
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setGhost(null)
       }}
       onDrop={(e) => {
+        setGhost(null)
         const type = e.dataTransfer.getData(DRAG_MIME)
         if (!type) return
         e.preventDefault()
@@ -90,9 +103,38 @@ export function CanvasView() {
       <GridBackground />
       <WorldLayer />
       <MarqueeOverlay />
-      <Toolbar />
+      <EmptyHint />
+      <SelectionToolbar />
+      {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}
       <ZoomControls />
       {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
+    </div>
+    </div>
+  )
+}
+
+/** Card-shaped preview that follows the cursor while a tool is dragged onto the canvas. */
+function GhostCard({ type, x, y }: { type: string; x: number; y: number }) {
+  const zoom = useBoard((s) => s.viewport.zoom)
+  const def = getCard(type)
+  if (!def) return null
+  const { width, height } = def.defaultSize
+  return (
+    <div
+      data-testid="ghost-card"
+      className="pointer-events-none absolute z-20 bg-[var(--card-bg)] p-4 text-[length:var(--text-card)] text-[var(--text-muted)]"
+      style={{
+        left: x,
+        top: y,
+        width: width * zoom,
+        height: (height ?? 80) * zoom,
+        transform: 'translate(-50%, -50%) rotate(-1.5deg)',
+        borderRadius: 'var(--radius-card)',
+        boxShadow: 'var(--shadow-card-drag)',
+        opacity: 0.95,
+      }}
+    >
+      {def.label}
     </div>
   )
 }

@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import {
-  copySelection, cutSelection, deleteSelection, duplicateSelection, nudge, pasteClipboard, selectAll,
+  addCard, copySelection, cutSelection, deleteSelection, duplicateSelection, nudge, pasteClipboard, reorder, selectAll,
 } from './actions'
+import { getCardByShortcut } from '../cards/registry'
+import { centerOfView } from './geometry'
 import { fitToContent, zoomBy, zoomTo } from './viewport'
 import { useBoard } from './store'
 
@@ -37,7 +39,7 @@ export function useCanvasShortcuts(): void {
       if (e.altKey) return
       if (ARROWS[e.key]) {
         const [x, y] = ARROWS[e.key]
-        const step = e.shiftKey ? 10 : 1
+        const step = e.shiftKey ? 80 : 8
         nudge(x * step, y * step)
       } else if (e.key === 'Delete' || e.key === 'Backspace') deleteSelection()
       else if (e.key === 'Escape') st().setSelection([])
@@ -47,7 +49,12 @@ export function useCanvasShortcuts(): void {
       else if (e.code === 'Digit1' && e.shiftKey) fitToContent()
       else if (k === 'v') st().setTool('select')
       else if (k === 'h') st().setTool('hand')
-      else return
+      else if (e.key === ']') reorder(true)
+      else if (e.key === '[') reorder(false)
+      else if (getCardByShortcut(k)) {
+        const s = st()
+        addCard(getCardByShortcut(k)!.type, centerOfView(s.viewport, s.size))
+      } else return
       e.preventDefault()
     }
     const keyup = (e: KeyboardEvent) => {

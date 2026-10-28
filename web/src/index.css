@@ -7,4 +7,38 @@ body {
   background: var(--canvas-bg);
   color: var(--text);
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Dotted warm-grey backdrop used by the canvas and the full-page screens. */
+.dotted {
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1.2px);
+  background-size: var(--canvas-dot-size) var(--canvas-dot-size);
+}
+
+@layer base {
+  :focus-visible { outline: none; box-shadow: var(--ring-focus); }
+}
+
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes menu-in { from { opacity: 0; transform: scale(0.98); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-toast-in { animation: toast-in var(--dur-toast-in) var(--ease-out); }
+.animate-menu-in { animation: menu-in var(--dur-menu) var(--ease-out); }
+.animate-spin-slow { animation: spin 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast-in, .animate-menu-in, .animate-spin-slow { animation: none; }
+}
+
+/* Card elevation lives in the shell so every card type gets the same states. */
+.card-inner {
+  height: 100%;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--dur-hover) var(--ease-out), transform var(--dur-lift) var(--ease-lift);
+}
+.card-inner:hover { box-shadow: var(--shadow-card-hover); }
+.card-inner[data-lifted='true'] { transform: var(--drag-transform); box-shadow: var(--shadow-card-drag); }

@@ -34,11 +34,36 @@ function SelectionBox() {
         top: box[1] - 6,
         width: box[2] + 12,
         height: box[3] + 12,
-        border: 'calc(1.5px / var(--zoom)) dashed var(--accent)',
+        border: 'calc(1.5px / var(--zoom)) dashed var(--primary)',
         pointerEvents: 'none',
         zIndex: 2_000_000,
       }}
     />
+  )
+}
+
+/** FR-53: thin primary lines where a dragged card aligns with another. */
+function GuidesLayer() {
+  const guides = useBoard((s) => s.guides)
+  if (!guides.length) return null
+  return (
+    <>
+      {guides.map((g) => (
+        <div
+          key={`${g.axis}${g.pos}`}
+          data-testid="snap-guide"
+          style={{
+            position: 'absolute',
+            background: 'var(--primary)',
+            pointerEvents: 'none',
+            zIndex: 2_000_001,
+            ...(g.axis === 'v'
+              ? { left: g.pos, top: g.from - 16, width: 'calc(1px / var(--zoom))', height: g.to - g.from + 32 }
+              : { top: g.pos, left: g.from - 16, height: 'calc(1px / var(--zoom))', width: g.to - g.from + 32 }),
+          }}
+        />
+      ))}
+    </>
   )
 }
 
@@ -58,19 +83,20 @@ export function WorldLayer() {
     >
       <CardLayer />
       <SelectionBox />
+      <GuidesLayer />
     </div>
   )
 }
 
 export function GridBackground() {
   const vp = useBoard((s) => s.viewport)
-  const cell = 32 * vp.zoom
+  const cell = 24 * vp.zoom
   if (vp.zoom < 0.5) return null
   return (
     <div
       className="pointer-events-none absolute inset-0"
       style={{
-        backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1.5px)',
+        backgroundImage: 'radial-gradient(circle, var(--canvas-dot) 1px, transparent 1.2px)',
         backgroundSize: `${cell}px ${cell}px`,
         backgroundPosition: `${vp.x}px ${vp.y}px`,
       }}
@@ -86,8 +112,8 @@ export function MarqueeOverlay() {
   return (
     <div
       data-testid="marquee"
-      className="pointer-events-none absolute border border-[var(--accent)] bg-[var(--accent)]/10"
-      style={{ left: tl.x, top: tl.y, width: m.w * vp.zoom, height: m.h * vp.zoom }}
+      className="pointer-events-none absolute border border-[var(--primary)]"
+      style={{ background: 'var(--marquee-fill)', left: tl.x, top: tl.y, width: m.w * vp.zoom, height: m.h * vp.zoom }}
     />
   )
 }

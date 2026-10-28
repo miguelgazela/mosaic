@@ -18,7 +18,7 @@ export function DevCanvasPage() {
       id: newId(),
       type: 'debug',
       x: 200 + (i % cols) * 200,
-      y: 100 + Math.floor(i / cols) * 160,
+      y: 96 + Math.floor(i / cols) * 160,
       width: 160,
       height: 96,
       z: zs[i],

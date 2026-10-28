@@ -8,3 +8,6 @@ export const cardRegistry: Record<string, CardDefinition> = {
 
 export const getCard = (type: string): CardDefinition | undefined => cardRegistry[type]
 export const listCards = (): CardDefinition[] => Object.values(cardRegistry)
+
+export const getCardByShortcut = (key: string): CardDefinition | undefined =>
+  listCards().find((c) => c.shortcut?.toLowerCase() === key.toLowerCase())

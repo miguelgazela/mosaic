@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  boundsOf, centerOfView, clampZoom, fitViewport, rectFromPoints, rectsIntersect, resizeBox,
+  alignGuides, boundsOf, centerOfView, clampZoom, fitViewport, rectFromPoints, rectsIntersect, resizeBox,
   screenToWorld, snap, worldToScreen, zoomAt, MAX_ZOOM, MIN_ZOOM,
 } from './geometry'
 
@@ -88,5 +88,29 @@ describe('resizeBox', () => {
   it('aspect respects min height', () => {
     const r = resizeBox({ w: 200, h: 100 }, { dx: -500, dy: 0 }, { ...base, aspect: true, minW: 10, minH: 50 })
     expect(r).toEqual({ w: 100, h: 50 })
+  })
+})
+
+describe('alignGuides', () => {
+  const other = { x: 100, y: 100, w: 200, h: 100 }
+  it('offsets to align near edges and reports a vertical guide', () => {
+    const r = alignGuides({ x: 103, y: 400, w: 50, h: 50 }, [other], 6)
+    expect(r.dx).toBe(-3)
+    expect(r.dy).toBe(0)
+    expect(r.guides).toEqual([{ axis: 'v', pos: 100, from: 100, to: 450 }])
+  })
+  it('aligns centres', () => {
+    const r = alignGuides({ x: 175, y: 400, w: 50, h: 50 }, [other], 6)
+    expect(r.dx).toBe(0)
+    expect(r.guides.some((g) => g.axis === 'v' && g.pos === 200)).toBe(true)
+  })
+  it('does nothing beyond the threshold', () => {
+    const r = alignGuides({ x: 120, y: 330, w: 50, h: 50 }, [other], 6)
+    expect(r).toEqual({ dx: 0, dy: 0, guides: [] })
+  })
+  it('aligns horizontally too', () => {
+    const r = alignGuides({ x: 500, y: 197, w: 50, h: 50 }, [other], 6)
+    expect(r.dy).toBe(3)
+    expect(r.guides.some((g) => g.axis === 'h' && g.pos === 200)).toBe(true)
   })
 })
