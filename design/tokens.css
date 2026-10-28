@@ -1,37 +1,132 @@
-/* Placeholder tokens (P0). Replace with real values from Claude Design mockups. */
+/*
+ * Design tokens — from the Claude Design mockups (see design/README.md).
+ * Source frame: "Foundations" (design/screens/00-foundations.png).
+ * Palette: ui-ux-pro-max design system, used in light mode.
+ * Do not add new colours or sizes here without a design reason.
+ */
 :root {
-  /* surfaces */
-  --canvas-bg: #f3f1ee;
+  /* ── Canvas and chrome ─────────────────────────────── */
+  --canvas-bg: #eceae6;
+  --canvas-dot: rgb(31 30 28 / 0.14);   /* 1px dots, 24px pitch, 100% zoom only */
+  --canvas-dot-size: 24px;
+  --chrome-bg: #f7f6f3;                 /* top bar, tool rail, column bg */
+  --chrome-border: #e2dfda;
   --card-bg: #ffffff;
-  --border: #e4e0da;
-  --text: #2b2a28;
-  --text-muted: #77736d;
-  --accent: #e8503a;
+  --overlay-dim: rgb(31 30 28 / 0.32);  /* behind search palette and dialogs */
 
-  /* card colour palette */
-  --card-color-1: #fff3b0;
-  --card-color-2: #ffd9b3;
-  --card-color-3: #ffc2c2;
-  --card-color-4: #f7c6e5;
-  --card-color-5: #d9c7f5;
-  --card-color-6: #c2d4ff;
-  --card-color-7: #bfe9f5;
-  --card-color-8: #c4efd0;
-  --card-color-9: #e2f0b5;
-  --card-color-10: #dcd8d2;
+  /* ── Primary (violet) — selection, focus, primary buttons, snap guides ── */
+  --primary: #7c3aed;                   /* white text on it: 5.7:1 */
+  --primary-hover: #6d28d9;
+  --primary-pressed: #5b21b6;
+  --primary-soft: #ede9fe;              /* drop targets, active tool, selected rows */
+  --primary-ink: #4c1d95;               /* text on --primary-soft */
+  --marquee-fill: rgb(124 58 237 / 0.10);
 
-  /* shape */
-  --radius-card: 6px;
-  --radius-ui: 8px;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.08), 0 2px 8px rgb(0 0 0 / 0.06);
-  --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.1), 0 6px 16px rgb(0 0 0 / 0.1);
+  /* ── Accent (teal) ─────────────────────────────────── */
+  --teal: #0891b2;                      /* graphics only: 3.7:1 on white */
+  --link: #0e7490;                      /* text links: 5.4:1 on white */
+  --link-hover: #155e75;
 
-  /* spacing: 8px grid */
-  --grid: 8px;
+  /* Deprecated alias kept for P0 code. Use --primary. */
+  --accent: var(--primary);
 
-  /* type */
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --text-sm: 13px;
-  --text-base: 15px;
+  /* ── Neutrals ─────────────────────────────────────── */
+  --text: #1f1e1c;                      /* text.primary */
+  --text-secondary: #55524d;
+  --text-muted: #67635d;                /* 4.9:1 on canvas — smallest text colour allowed */
+  --icon-subtle: #a39f98;               /* icons and dividers only, never text */
+  --text-disabled: #8f8a83;
+  --border: #dcd9d3;
+  --border-strong: #cfcbc4;             /* input borders */
+  --divider: #e8e5e0;
+  --fill-hover: #f2f0ec;
+  --fill-pressed: #e6e3de;
+
+  /* ── Status (always pair colour with an icon or text) ── */
+  --success: #1e7a4c;  --success-soft: #ddf0e5;
+  --warning: #9a6200;  --warning-soft: #fbebcb;  --warning-ink: #7a4d00;
+  --danger:  #b42f28;  --danger-soft:  #fbe4e2;  --danger-ink:  #9a2620;
+  --danger-hover: #9a2620; --danger-pressed: #80201b;
+  --info:    #1f6fa8;  --info-soft:    #dcebf6;
+
+  /* ── Card palette (keys match canvas/colors.ts; null = white) ── */
+  --card-color-1: #fbf0c4;   /* Butter */
+  --card-color-2: #fbe0d0;   /* Peach */
+  --card-color-3: #f8d9de;   /* Rose */
+  --card-color-4: #e6def5;   /* Lilac */
+  --card-color-5: #d9e8f8;   /* Sky */
+  --card-color-6: #d7efe4;   /* Mint */
+  --card-color-7: #e3eadb;   /* Sage */
+  --card-color-8: #f3ebdd;   /* Sand */
+  --card-color-9: #e4e2de;   /* Stone */
+  --card-color-10: #ffffff;  /* White */
+
+  /* ── Connection line colours ─────────────────────────── */
+  --line-graphite: #55524d;
+  --line-violet: #7c3aed;
+  --line-orange: #c2410c;
+  --line-green: #1e7a4c;
+
+  /* ── Typography ──────────────────────────────────────── */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;  /* inline code only */
+  /* size / line-height / weight */
+  --text-h1: 28px;  --leading-h1: 34px;  /* 600 */
+  --text-h2: 22px;  --leading-h2: 28px;  /* 600 */
+  --text-h3: 17px;  --leading-h3: 24px;  /* 600 */
+  --text-body: 15px; --leading-body: 22px;
+  --text-card-title: 15px; --leading-card-title: 20px; /* 600 */
+  --text-card: 14px; --leading-card: 21px;
+  --text-sm: 13px;  --leading-sm: 18px;
+  --text-caption: 12px; --leading-caption: 16px;      /* 500; also tool rail labels */
+  /* P0 aliases */
+  --text-base: var(--text-body);
   --text-lg: 18px;
+
+  /* ── Spacing (8px grid) ──────────────────────────────── */
+  --grid: 8px;
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+  --card-pad-y: 14px; --card-pad-x: 16px;
+  --column-pad-y: 8px; --column-pad-x: 10px; --column-gap: 8px;
+  --topbar-h: 56px;
+  --rail-w: 76px;
+  --target-min: 44px;                   /* phone hit targets */
+
+  /* ── Radii ───────────────────────────────────────────── */
+  --radius-chip: 4px;
+  --radius-card: 6px;
+  --radius-ui: 8px;                     /* buttons, inputs, columns */
+  --radius-menu: 10px;
+  --radius-tile: 12px;                  /* board icon tile */
+  --radius-dialog: 14px;
+
+  /* ── Elevation ───────────────────────────────────────── */
+  --shadow-card: 0 1px 2px rgb(31 30 28 / 0.08), 0 0 0 1px rgb(31 30 28 / 0.05);
+  --shadow-card-hover: 0 3px 8px rgb(31 30 28 / 0.10), 0 0 0 1px rgb(31 30 28 / 0.06);
+  --shadow-card-drag: 0 14px 32px rgb(31 30 28 / 0.20), 0 0 0 1px rgb(31 30 28 / 0.06);
+  --shadow-menu: 0 8px 24px rgb(31 30 28 / 0.14), 0 0 0 1px rgb(31 30 28 / 0.06);
+  --shadow-dialog: 0 24px 60px rgb(31 30 28 / 0.24), 0 0 0 1px rgb(31 30 28 / 0.06);
+  --ring-selected: 0 0 0 2px var(--primary);
+  --ring-focus: 0 0 0 2px var(--chrome-bg), 0 0 0 4px var(--primary);
+  --drag-transform: rotate(-1.5deg) scale(1.02);
+
+  /* ── Motion ──────────────────────────────────────────── */
+  --ease-out: ease-out;
+  --ease-in: ease-in;
+  --ease-lift: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-hover: 120ms;
+  --dur-menu: 140ms;
+  --dur-lift: 160ms;
+  --dur-drop: 200ms;
+  --dur-toast-in: 200ms;
+  --dur-toast-out: 160ms;
+  --dur-highlight: 1200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-hover: 0ms; --dur-menu: 0ms; --dur-lift: 0ms; --dur-drop: 0ms;
+    --drag-transform: none;
+  }
 }

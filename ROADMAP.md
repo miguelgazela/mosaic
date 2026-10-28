@@ -2,122 +2,170 @@
 
 Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" into a new session. Each session reads `CLAUDE.md` first.
 
-Dependency graph:
+## Status
+
+| Phase | State |
+| --- | --- |
+| P0 Foundation | Done (`69244fb`) |
+| P1 Canvas engine | Done (`e9cc9e0`) — built before the mockups; D1 brings it in line |
+| Mockups | Done — 46 frames, see `design/README.md` |
+| D1 … P12 | Not started |
+
+## Dependency graph
 
 ```
-P0 Foundation
-  └─ P1 Canvas engine
-       └─ P2 Persistence + sync
-            ├─ P3 Notes + columns + board cards  ─┐
-            ├─ P4 Images + files                  │  (parallel: separate card folders)
-            ├─ P5 Links + unfurl fn               │
-            ├─ P6 To-dos + Tasks view             │
-            └─ P7 Connections (arrows)           ─┘
-                 └─ P8 Boards mgmt: move, duplicate, trash
-                      ├─ P9  Share links          ─┐
-                      ├─ P10 Search               │  (parallel)
-                      └─ P11 Export              ─┘
-                           └─ P12 Polish + perf + PWA
+P0 ✓ ─ P1 ✓
+         ├─ D1 Design alignment ─────┐   (parallel: D1 = UI components, P2 = data layer)
+         └─ P2 Persistence + sync ───┤
+                                     ├─ P3 Notes, columns, boards, swatch ─┐
+                                     ├─ P4 Images + files                   │  (parallel: separate card folders)
+                                     ├─ P5 Links + unfurl fn                │
+                                     ├─ P6 To-dos + Tasks view              │
+                                     └─ P7 Connections (arrows)            ─┘
+                                          └─ P8 Boards mgmt: move, duplicate, trash
+                                               ├─ P9  Share links + read-only ─┐
+                                               ├─ P10 Search                   │  (parallel)
+                                               └─ P11 Export                  ─┘
+                                                    └─ P12 Polish, phone, perf, PWA
 ```
 
-P3–P7 can run as parallel sessions in separate worktrees once P2 is merged: each owns `web/src/cards/<type>/` plus its migration number (reserve: P4=0002, P5=0003, P6=0004, P7=0005). Shared files touched by all (`cards/registry.ts`, `Toolbar.tsx`) — keep edits to one line each to minimise merge conflicts.
+- D1 and P2 can run as parallel sessions: D1 owns `web/src/ui/` and the visual layer of `canvas/*.tsx`; P2 owns `canvas/store.ts` persistence hooks and `web/src/lib/sync/`. D1 builds the top bar and save-status component with props; P2 wires real data into them.
+- P3–P7 can run in parallel once D1 and P2 are merged: each owns `web/src/cards/<type>/` plus its migration number (reserve: P4=0002, P5=0003, P6=0004, P7=0005). Shared files (`cards/registry.ts`, `Toolbar.tsx`) — keep edits to one line each.
 
-Design track (parallel to P0–P2): mockups in Claude Design from the brief linked in `design/README.md`. Delivery items 1–4 should land before P3 starts.
+## How to use the designs (every phase with UI)
+
+1. Read `design/README.md` first — its decisions win over the brief and over this roadmap's wording.
+2. Open every PNG in the phase's **Design refs** before writing UI. Rebuild in React + Tailwind using `design/tokens.css` variables; do not copy pixel values that a token already covers.
+3. Mockup images are placeholders (flat colour blocks); use real content.
+4. Before finishing, screenshot the built screen in the browser at 1440 × 900 and compare it with the PNG. List visible differences in the final report; fix the ones that are not deliberate.
+5. If the mockup is unclear or missing a state, follow the closest frame and note it as an open question — do not invent new colours or sizes.
 
 ---
 
-## P0 — Foundation
-**Goal:** runnable empty app, signed-in user sees an empty Home canvas page; schema applied.
-- Scaffold `web/` (Vite React TS, Tailwind 4, router, TanStack Query, Zustand, oxlint, Vitest, Playwright).
-- `lib/supabase.ts` with `db.schema = 'milanote'`; `.env.example`.
-- Auth pages: sign in (password + magic link), sign out, "not a member" screen.
-- `supabase/migrations/0001_init.sql` per `DATA_MODEL.md`: schema, enum, all tables, RLS, `is_member`, `ensure_home`, `board_path`, storage bucket + policies, realtime publication.
-- `design/tokens.css` + `design/README.md`: Milanote-like look (light warm-grey canvas, white cards with soft shadow, 8 px grid, Inter/system font, palette of ~10 card colours).
-- Routes: `/` → redirect to Home board, `/b/:boardId` placeholder, `/login`.
-- `vercel.json` SPA rewrite.
-**Done when:** `npm run build`, lint, tests pass; manual SQL steps documented; sign-in works against real project; Home board row created.
+## P0 — Foundation ✓
+Done. Scaffold, auth, routes, migration 0001, placeholder tokens.
 
-## P1 — Canvas engine (local only)
-**Goal:** Milanote-feel canvas with placeholder "debug" cards, no persistence.
-- Viewport: pan (space-drag, wheel, middle mouse, empty-area drag), zoom (ctrl/cmd-wheel, pinch, keys, menu, fit), zoom around cursor.
-- Zustand board store: elements map, order, selection, viewport; per-card selectors.
-- Commands + undo/redo stack.
-- CardShell: drag (rAF), 8 px snap (alt disables), resize handles per registry flags, z-to-front on move.
-- Selection: click, shift-click, marquee, arrow-key nudge, delete, select all, escape.
-- Copy/cut/paste/duplicate (internal + system clipboard JSON).
-- Card registry contract + `debug` card type.
-- Left toolbar shell (buttons click-to-add + drag-to-place), context menu shell, zoom controls.
-- Unit tests: geometry, snapping, fractional index helpers, undo stack.
-**Done when:** 500 debug cards drag/pan/zoom smoothly; Playwright test drags, marquee-selects, undoes.
+## P1 — Canvas engine ✓
+Done. Viewport, store, commands/undo, card shell, selection + marquee, clipboard, toolbar, context menu, zoom controls, debug card.
+Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolbar, no ghost card on tool drag, ad-hoc styling (11 px labels, `bg-black/5`, `bg-white`).
+
+## D1 — Design alignment (retrofit P0 + P1 to the mockups)
+**Goal:** everything built so far looks like the mockups; shared UI kit ready for later phases.
+- Load Plus Jakarta Sans in `web/index.html`; confirm `tokens.css` is the only source of colours, sizes, radii, shadows, motion. Replace ad-hoc Tailwind colours (`bg-white`, `black/5`, `text-[11px]`) with tokens.
+- `web/src/ui/` kit per `00-buttons-and-inputs.png`: Button (primary, secondary, ghost, destructive, icon-only), TextField, SearchField, Toggle, Checkbox, Menu/MenuItem, Tooltip (with shortcut key chip), Toast host, Dialog shell. All states incl. focus ring `--ring-focus`.
+- Sign in + Not a member screens per frames.
+- Board page layout: top bar (logo mark, breadcrumb slot, save-status slot, Search button with ⌘K hint, Tasks, Share, avatar) — wired to placeholders; breadcrumb overflow menu + inline rename UI.
+- Tool rail per `00-canvas-chrome-states.png`: icon (Lucide) + 12 px label, states default/hover+tooltip/pressed/active/focus, Trash at bottom, ghost card while dragging a tool. **Keep Select and Hand at the top** (deliberate deviation).
+- Registry gains `shortcut` field; single-key shortcuts N/T/C/B/V/H (FR-50) — card types fill their key in later phases.
+- Canvas: dotted warm-grey background, card shared states per `00-card-shared-states.png` (hover, selected outline `--primary`, dragging tilt + shadow, reduced-motion), resize handles, marquee style, **snap guides** (FR-53).
+- **Selection toolbar** (FR-52) and restyled card / canvas context menus per `00-menus.png` (items whose features come later are hidden, not disabled).
+- Zoom controls + zoom menu (25/50/100/200 %, Fit to content ⇧1).
+- Empty board hint, 404 page, toast + offline banner components (`00-toasts-banner-highlight.png`).
+- Update P1 Playwright tests for new selectors; add one visual check per screen above.
+
+**Design refs:** `00-foundations`, `00-buttons-and-inputs`, `00-canvas-chrome-states`, `00-card-shared-states`, `00-menus` (card + canvas menus), `00-toasts-banner-highlight`, `00-empty-and-loading` (empty board), `01-sign-in-default`, `01-sign-in-error-and-link-sent`, `02-not-a-member-default`, `04-board-empty`, `04-board-card-selected`, `04-board-marquee`, `04-board-drag-snap-guides`, `09-not-found-default`.
+**Done when:** those frames match the running app (screenshots compared); lint, tests, build pass.
 
 ## P2 — Persistence + sync
 **Goal:** board loads from and saves to Supabase; live across tabs.
 - Load board: elements + connections in one go; TanStack Query cache.
-- Write queue: patch coalescing, debounce, batch upsert, IndexedDB persistence, retry with backoff, save-status indicator.
+- Write queue: patch coalescing, debounce, batch upsert, IndexedDB persistence, retry with backoff.
 - Realtime subscription per board; echo suppression via `client_id`; apply newer remote rows.
 - Viewport persisted per board (debounced).
-- Breadcrumbs from `board_path`.
+- Wire D1's save status (Saved / Saving… / Offline – changes will sync), offline banner, breadcrumbs from `board_path`, inline board rename.
+- Board-opening skeleton.
+
+**Design refs:** `00-canvas-chrome-states` (save status, breadcrumbs), `00-toasts-banner-highlight` (offline banner), `00-empty-and-loading` (board skeleton), `04-board-file-drop-offline` (offline banner only).
 **Done when:** edits survive reload; two tabs mirror each other < 1 s; offline edit flushes on reconnect.
 
-## P3 — Notes, columns, board cards
-- Note card with TipTap: formatting toolbar, markdown shortcuts, auto-height, colour; `toPlainText`, `toMarkdown`.
+## P3 — Notes, columns, board cards, colour swatch
+- Note card with TipTap: format toolbar + heading/highlight menus, markdown shortcuts, auto-height, colour; `toPlainText`, `toMarkdown`. Shortcut N.
 - Double-click canvas → new focused note. Paste plain text → note.
-- Column card: title, stacked children by `sort_key`, drag in/out with insert indicator, collapse, width resize.
-- Board card: create child board, icon/colour picker, item count, open on click; navigation + breadcrumbs.
-**Done when:** can build nested boards with columns of notes; all persists.
+- Column card: title, count, stacked children by `sort_key`, drag in/out with insert line, collapse, width resize, colour. Shortcut C.
+- **Move into column…** in card menu (FR-51).
+- Board card: create child board, icon + colour picker, item count, open on click, drop-target highlight; navigation + breadcrumbs. Shortcut B.
+- Colour swatch card: hex, optional name, click copies (with "Copied" state).
+- Card colour picker (shared, `00-pickers`).
+- Home: empty state with onboarding hint.
+
+**Design refs:** `00-card-note`, `00-card-column`, `00-card-board-and-swatch`, `00-card-shared-states`, `00-pickers` (card colour, board icon + colour), `04-board-populated`, `04-board-drag-into-column`, `03-home-empty`.
+**Done when:** can build nested boards with columns of notes and swatches; all persists; frames match.
 
 ## P4 — Images + files
-- Upload pipeline: drag-drop from desktop, paste, toolbar Upload; HEIC convert, resize 2560, thumb 512; progress placeholder card.
-- Image card: aspect-locked resize, caption, lightbox, download. Thumb below 100% zoom.
+- Upload pipeline: drag-drop from desktop (drop-zone overlay), paste, tool rail Upload; HEIC convert, resize 2560, thumb 512; uploading + failed (retry) states.
+- Image card: aspect-locked resize, caption, lightbox (default + loading), download. Thumb below 100 % zoom.
 - File card: icon, name, size, download; PDF first-page preview optional.
-- Signed URL cache + batch fetch on board open.
-**Done when:** 50 images on a board load lazily; storage paths under `{uid}/`.
+- Signed URL cache + batch fetch on board open; image placeholders while loading.
+- Upload failed toast with Retry.
+
+**Design refs:** `00-card-image-and-file`, `08-lightbox-default`, `08-lightbox-loading`, `04-board-file-drop-offline` (drop zone), `00-empty-and-loading` (image placeholder), `00-toasts-banner-highlight` (upload failed).
+**Done when:** 50 images on a board load lazily; storage paths under `{uid}/`; frames match.
 
 ## P5 — Links + `milanote-unfurl`
 - Edge function: OG/Twitter meta + oEmbed for YouTube/Vimeo, SSRF guard, timeout, size cap; tests.
-- Link card: preview layout like Milanote, embed player on click, edit URL.
+- Link card: full preview, text-only, loading, failed (plain URL), video before play + playing; edit URL. Text links use `--link`, not `--teal`.
 - Paste URL anywhere → link card.
-**Done when:** common sites (YouTube, GitHub, news, Pinterest) unfurl; private IPs rejected.
+
+**Design refs:** `00-card-link`, `00-empty-and-loading` (link placeholder).
+**Done when:** common sites (YouTube, GitHub, news, Pinterest) unfurl; private IPs rejected; frames match.
 
 ## P6 — To-dos + Tasks view
-- To-do card: title, items (TipTap-lite text), check, reorder (drag), due date picker, hide completed, progress.
-- `tasks()` RPC + `/tasks` page grouped Overdue/Today/Upcoming/No date; check from list; jump to card with highlight.
-**Done when:** due items from nested boards appear in Tasks; toggling syncs both ways.
+- To-do card: title, items, check, reorder, progress bar + "2/4", due date chip (upcoming / Today / Overdue — icon + word, never colour alone), due date picker, hide completed, colour. Shortcut T.
+- `tasks()` RPC + `/tasks` page grouped Overdue / Today / Upcoming / No date; check from list; jump to card with highlight flash; empty state.
+
+**Design refs:** `00-card-todo`, `05-tasks-populated`, `05-tasks-empty`, `00-toasts-banner-highlight` (highlight flash).
+**Done when:** due items from nested boards appear in Tasks; toggling syncs both ways; frames match.
 
 ## P7 — Connections (arrows)
-- SVG layer; line tool; drag from card edge handle; attach/detach endpoints; follow cards.
-- Straight/curved with bend handle; dash; arrowheads; colour; label.
+- SVG layer; Line tool (active state on rail); drag from card edge handles; attach/detach endpoints; follow cards.
+- Straight/curved with bend handle; dash; arrowheads; colours; label; hover, selected, drawing, snapping states; line style popover.
 - Selection, delete, undo integration; hit-testing on thin lines.
-**Done when:** arrows survive moving cards, column moves, copy/paste of connected cards.
+
+**Design refs:** `00-connections`, `04-board-populated` (labelled curved arrow).
+**Done when:** arrows survive moving cards, column moves, copy/paste of connected cards; frames match.
 
 ## P8 — Board management
-- `move_elements` RPC: drop selection onto board card, "Move to…" picker (board tree).
+- `move_elements` RPC: drop selection onto board card, **Move to…** picker (board tree) — "Moved 3 cards to Ideas" toast with Undo.
 - `duplicate_board` RPC.
-- Trash: `/trash` page, restore, delete forever; `milanote-purge` cron function.
-- Home dashboard polish: recent boards list.
-**Done when:** move/duplicate/trash on nested trees keep children + arrows consistent.
+- Board menu (rename, icon & colour, duplicate, export slot, share slot, move to trash).
+- Trash: `/trash` page (populated + empty), restore, delete forever with confirm dialog; `milanote-purge` cron function.
+- Home: Recent boards strip.
 
-## P9 — Share links
-- Share dialog: create/revoke links, include sub-boards toggle, copy URL.
+**Design refs:** `00-menus` (board menu), `00-pickers` (move to board), `06-trash-populated`, `06-trash-empty`, `00-shortcuts-and-confirm` (delete forever), `03-home-populated`, `00-toasts-banner-highlight` (move + undo).
+**Done when:** move/duplicate/trash on nested trees keep children + arrows consistent; frames match.
+
+## P9 — Share links + read-only mode
+- Share dialog: create/revoke links (revoke confirm), include sub-boards toggle, copy with "Copied", empty state.
 - `milanote-share` edge function: token → board tree subset + signed URLs.
-- `/s/:token` read-only viewer reusing canvas in `readOnly` mode.
-**Done when:** incognito window opens shared board; revoked token → 404; sub-board access respects toggle.
+- Read-only canvas mode (FR-54): no tool rail, "View only" chip, bottom status pill.
+- `/s/:token` viewer: default, sub-board opened, revoked / not found.
+
+**Design refs:** `00-share-dialog`, `00-shortcuts-and-confirm` (revoke), `04-board-read-only`, `07-shared-board-default`, `07-shared-board-sub-board`, `07-shared-board-revoked`.
+**Done when:** incognito window opens shared board; revoked token → revoked screen; sub-board access respects toggle; frames match.
 
 ## P10 — Search
 - `search()` RPC with snippets + path; board-title search.
-- cmd+k palette: typeahead, keyboard nav, recent boards when empty.
-- Jump to result: open board, pan/zoom to card, flash highlight.
-**Done when:** finds text inside notes, to-do items, link titles, captions, file names across all boards.
+- ⌘K palette: recent boards when empty, grouped results (Boards, Cards) with highlighted match + path, keyboard selection, searching, no results.
+- Jump to result: open board, pan/zoom to card, highlight flash.
+
+**Design refs:** `00-search-palette`, `00-toasts-banner-highlight` (highlight flash).
+**Done when:** finds text inside notes, to-do items, link titles, captions, file names across all boards; frames match.
 
 ## P11 — Export
-- PNG (content bounds / viewport), PDF, Markdown zip (with images). Registry `toMarkdown` per card.
-- Vitest snapshot tests for markdown transform.
+- Export menu: PNG (whole board / current view), PDF, Markdown zip; progress state; "Export ready" toast.
+- Registry `toMarkdown` per card; Vitest snapshot tests for markdown transform.
+
+**Design refs:** `00-menus` (export + progress), `00-toasts-banner-highlight` (export ready).
 **Done when:** exported PNG includes images and arrows; markdown zip opens cleanly.
 
-## P12 — Polish, performance, PWA
-- Keyboard shortcut sheet (`?`), all shortcuts from REQUIREMENTS.
-- Viewport culling, memo audit, 500-card perf test.
-- Empty states, loading skeletons, error toasts, offline banner.
-- PWA manifest + service worker (app shell only), responsive read-only-ish mobile layout.
-- Accessibility pass.
-**Done when:** NFRs in REQUIREMENTS §4 measured and met.
+## P12 — Polish, phone, performance, PWA
+- Keyboard shortcuts sheet (`?`), every shortcut from REQUIREMENTS incl. FR-50.
+- Account menu (name, email, Trash, Keyboard shortcuts, Sign out).
+- Phone views (view only, FR-54): board with "View only on phone" strip, shared board, sign in; 16 px inputs, 44 px targets.
+- Laptop 1280 × 800 fit check of tool rail and top bar.
+- Zoomed-out 25 % rendering (thumbnails, viewport culling), memo audit, 500-card perf test.
+- Remaining empty/loading states; PWA manifest + service worker (app shell only).
+- Accessibility pass against NFR-8.
+
+**Design refs:** `00-shortcuts-and-confirm` (shortcuts sheet), `00-menus` (account menu), `04-board-phone`, `07-shared-board-phone`, `01-sign-in-phone`, `04-board-laptop-1280`, `04-board-zoom-25`, `00-empty-and-loading`.
+**Done when:** NFRs in REQUIREMENTS §4 measured and met; phone + laptop frames match.

@@ -4,7 +4,7 @@ Visual board app for organising ideas: a free-form canvas of notes, images, link
 
 ## 1. Constraints
 
-- Web only (desktop browser first). Phones: read/view works, editing best-effort (responsive + PWA install).
+- Web only (desktop browser first). Phones: view only (responsive + PWA install), per FR-54.
 - Single owner per board. No live multiplayer. Read-only share links for others.
 - Backend: existing Supabase project `varnswkomuckwgobplld` (shared with KangarooSplit + another app).
   - Everything lives in schema `milanote`. Never touch `public`, other apps' schemas, or project-wide auth settings.
@@ -49,17 +49,21 @@ Visual board app for organising ideas: a free-form canvas of notes, images, link
 - FR-12 Infinite canvas. Pan with space+drag, trackpad two-finger scroll, middle mouse, or drag on empty area (hand tool). Zoom with ctrl/cmd+scroll, pinch, +/- keys, zoom menu (25%–400%, "fit to content", "100%").
 - FR-13 Cards snap to an 8 px grid while dragging/resizing. Hold alt/option to disable snapping.
 - FR-14 Select: click, shift-click to add, marquee drag on empty area. Selection shows bounding box.
-- FR-15 Move selection by drag or arrow keys (shift = 10× step).
+- FR-15 Move selection by drag or arrow keys: 8 px step, shift = 80 px.
 - FR-16 Resize cards horizontally (notes, links, to-dos, columns); images resize keeping aspect ratio. Height is auto from content except images/files.
 - FR-17 Z-order: last-moved card comes to front; "bring to front / send to back" in context menu.
 - FR-18 Undo/redo (cmd+z / cmd+shift+z) for all canvas edits within session, at least 100 steps.
 - FR-19 Copy/cut/paste cards within and across boards (internal clipboard + system clipboard JSON). Duplicate with cmd+d or alt-drag.
 - FR-20 Delete selection with backspace/delete.
-- FR-21 Context menu on cards: colour, duplicate, move to, copy link, bring front/back, delete.
-- FR-22 Left toolbar (Milanote style) with card types: Note, Link, To-do, Line, Board, Column, Colour, Upload. Click adds at viewport centre; drag places at drop point.
+- FR-21 Context menu on cards: colour, duplicate, move to, move into column, copy link, bring front/back, delete.
+- FR-22 Left tool rail, icon + 12 px label per tool: Select, Hand, then card types Note, Link, To-do, Line, Board, Column, Colour, Upload; Trash at the bottom. Click adds at viewport centre; drag places at drop point (ghost card follows cursor). Tooltip shows name + shortcut key. (Select/Hand are kept on purpose although the mockups omit them.)
 - FR-23 Double-click empty canvas creates a note there and focuses it.
 - FR-24 Drop files from desktop → image/file cards at drop point. Paste image from clipboard → image card. Paste URL → link card. Paste plain text → note.
 - FR-25 Board remembers last viewport (pan + zoom) per user.
+- FR-50 Single-key shortcuts when nothing is being edited: N note, T to-do, C column, B board (plus V select, H hand). Shown in tooltips, canvas menu and shortcuts sheet.
+- FR-51 "Move into column…" in the card context menu: pick a column on the current board; card is appended to it. Keyboard/menu alternative to dropping into a column (WCAG 2.2 dragging movements).
+- FR-52 Selection toolbar floats above the selection: colour, duplicate, move to board, layer order, delete; shows "N cards" for multi-select.
+- FR-53 Snap guides: thin primary-colour lines when a dragged card's edges or centre align with another card.
 
 ### 3.4 Card types
 
@@ -71,7 +75,7 @@ Visual board app for organising ideas: a free-form canvas of notes, images, link
 - FR-31 **Column**: title + ordered stack of cards. Drag cards in/out; drop indicator shows insert position. Collapse/expand. Column width resizable; child cards take column width.
 - FR-32 **Board card**: see 3.2.
 - FR-33 **Colour swatch**: hex colour + optional name. Click copies hex.
-- FR-34 Card background colour selectable from a fixed palette (notes, to-dos, columns).
+- FR-34 Card background colour selectable from a fixed palette (`--card-color-1…10`) for notes, to-dos, columns and board cards. Links, images and files are not colourable.
 
 ### 3.5 Connections (arrows)
 
@@ -99,6 +103,7 @@ Visual board app for organising ideas: a free-form canvas of notes, images, link
 
 - FR-45 Create share link per board: read-only, optional "include sub-boards". Revoke anytime. Multiple links allowed.
 - FR-46 Shared view `/s/:token` works without sign-in: pan/zoom, open sub-boards (if allowed), open images, follow links. No editing.
+- FR-54 Read-only boards (shared view, and the owner's own board on phone) hide the tool rail, show a "View only" chip in the top bar and a status pill at the bottom. Phone board view shows a "View only on phone" strip.
 
 ### 3.10 Sync
 
@@ -114,6 +119,8 @@ Visual board app for organising ideas: a free-form canvas of notes, images, link
 - NFR-4 Keyboard accessible toolbars and menus; focus visible.
 - NFR-5 RLS on every table; no service role key in client.
 - NFR-6 Unit tests for pure logic (geometry, ordering, undo stack, export transforms). Playwright smoke tests for canvas flows.
+- NFR-7 UI matches the mockups in `design/screens/` using only `design/tokens.css` values (see `design/README.md`).
+- NFR-8 Text contrast ≥ 4.5:1; no information by colour alone (due states carry icon + word); minimum text 12 px; phone inputs 16 px and targets 44 px; `prefers-reduced-motion` respected.
 
 ## 5. Out of scope (v1)
 

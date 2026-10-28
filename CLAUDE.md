@@ -25,4 +25,6 @@ Web clone of Milanote. Read before working:
 ## UI
 
 - Follow `design/README.md` and `design/tokens.css`. No new colours/sizes without reason.
+- Before building any UI, open the PNGs listed under your phase's **Design refs** in `ROADMAP.md` (files in `design/screens/`). Follow "How to use the designs" in `ROADMAP.md`, incl. the screenshot comparison before finishing.
+- Project skill `ui-ux-pro-max` (`.claude/skills/`) holds the design system the mockups came from; use it for accessibility or styling questions the mockups don't answer.
 - UI text: English.
