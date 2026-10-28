@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import { ELEMENT_COLUMNS, type ElementRow } from './rows'
+import { ELEMENT_COLUMNS, type ConnRow, type ElementRow } from './rows'
 import type { Viewport } from '../../canvas/geometry'
 
 export interface BoardMeta {
@@ -17,7 +17,7 @@ export interface PathItem { id: string; title: string; icon: string | null }
 export interface BoardData {
   board: BoardMeta
   elements: ElementRow[]
-  connections: Record<string, unknown>[]
+  connections: ConnRow[]
   path: PathItem[]
 }
 
@@ -35,7 +35,7 @@ export async function fetchBoard(id: string): Promise<BoardData> {
   return {
     board: board.data as BoardMeta,
     elements: (elements.data ?? []) as ElementRow[],
-    connections: (connections.data ?? []) as Record<string, unknown>[],
+    connections: (connections.data ?? []) as ConnRow[],
     path: (path.data ?? []) as PathItem[],
   }
 }
@@ -44,6 +44,17 @@ export async function fetchElements(boardId: string): Promise<ElementRow[]> {
   const { data, error } = await supabase.from('elements').select(ELEMENT_COLUMNS).eq('board_id', boardId).is('deleted_at', null)
   if (error) throw error
   return (data ?? []) as ElementRow[]
+}
+
+export async function fetchConnections(boardId: string): Promise<ConnRow[]> {
+  const { data, error } = await supabase.from('connections').select('*').eq('board_id', boardId).is('deleted_at', null)
+  if (error) throw error
+  return (data ?? []) as ConnRow[]
+}
+
+export async function upsertConnections(rows: ConnRow[]): Promise<void> {
+  const { error } = await supabase.from('connections').upsert(rows, { onConflict: 'id' })
+  if (error) throw error
 }
 
 export async function upsertElements(rows: ElementRow[]): Promise<void> {

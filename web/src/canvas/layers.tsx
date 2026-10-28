@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { CardShell } from './CardShell'
+import { ConnectionsLayer, ConnectionsOverlay } from './ConnectionsLayer'
 import { boundsOf, worldToScreen } from './geometry'
 import { elementRect, selectedIds, useBoard } from './store'
 
@@ -81,7 +82,9 @@ export function WorldLayer() {
         ['--zoom' as string]: vp.zoom,
       }}
     >
+      <ConnectionsLayer />
       <CardLayer />
+      <ConnectionsOverlay />
       <SelectionBox />
       <GuidesLayer />
     </div>

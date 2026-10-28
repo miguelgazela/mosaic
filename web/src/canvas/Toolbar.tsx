@@ -1,4 +1,4 @@
-import { Hand, MousePointer2, Trash2 } from 'lucide-react'
+import { ArrowUpRight, Hand, MousePointer2, Trash2 } from 'lucide-react'
 import { listCards } from '../cards/registry'
 import { Tooltip, toast } from '../ui'
 import { addCard } from './actions'
@@ -44,6 +44,9 @@ function RailButton({ label, tip, shortcut, pressed, ...rest }: {
 export function Toolbar() {
   const tool = useBoard((s) => s.tool)
   const setTool = useBoard((s) => s.setTool)
+  const lineTile = (
+    <RailButton key="line" label="Line" tip="Draw a line" shortcut="L" pressed={tool === 'line'} icon={<ArrowUpRight size={18} />} onClick={() => setTool(tool === 'line' ? 'select' : 'line')} />
+  )
   const cards = listCards().filter((c) => c.toolbar)
   return (
     <nav
@@ -57,7 +60,8 @@ export function Toolbar() {
       <hr className="my-1 w-8 border-[var(--divider)]" />
       {cards.map((c) => {
         const Icon = c.toolbar!.icon
-        return (
+        return [
+          c.type === 'board' ? lineTile : null,
           <RailButton
             key={c.type}
             label={c.toolbar!.label}
@@ -76,9 +80,10 @@ export function Toolbar() {
               const s = useBoard.getState()
               addCard(c.type, centerOfView(s.viewport, s.size))
             }}
-          />
-        )
+          />,
+        ]
       })}
+      {!cards.some((c) => c.type === 'board') && lineTile}
       <div className="flex-1" />
       <hr className="my-1 w-8 border-[var(--divider)]" />
       <RailButton label="Trash" icon={<Trash2 size={18} />} onClick={() => toast('Trash is coming soon')} />

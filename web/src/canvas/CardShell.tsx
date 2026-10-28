@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef, type CSSProperties } from 'react'
 import { getCard } from '../cards/registry'
+import { EdgeHandles } from './EdgeHandles'
 import { startCardDrag, startResize } from './interactions'
 import { useBoard } from './store'
 
@@ -41,6 +42,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
     <div
       ref={ref}
       data-card-id={id}
+      className="group/card"
       data-x={el.x}
       data-y={el.y}
       data-w={el.width}
@@ -67,6 +69,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
         if (startCardDrag(e, id)) e.stopPropagation()
       }}
     >
+      {!lifted && <EdgeHandles id={id} skip={single && !inColumn && resize === 'width' ? 'right' : undefined} />}
       <div className="card-inner" data-lifted={lifted}>
         {Component ? (
           <Component element={el} selected={selected} inColumn={inColumn} renderChild={renderChild} />
