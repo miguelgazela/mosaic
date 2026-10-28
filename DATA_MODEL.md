@@ -64,7 +64,7 @@ Indexes: `(board_id) where deleted_at is null`, `(parent_id)`, GIN `search`, `(t
 note:   { doc: TipTapJSON }   // schema: web/src/cards/note/extensions.ts
 image:  { path: string; thumbPath: string; w: number; h: number; caption?: TipTapJSON; name: string; bytes: number }
 file:   { path: string; name: string; mime: string; bytes: number; previewPath?: string }
-link:   { url: string; title?: string; description?: string; image?: string; favicon?: string; embed?: { provider: 'youtube'|'vimeo'; id: string } }
+link:   { url: string; title?: string; description?: string; image?: string; favicon?: string; embed?: { provider: 'youtube'|'vimeo'; id: string }; duration?: number /* seconds, oEmbed */; failed?: true /* unfurl failed: show plain URL */ }
 todo:   { title?: string; hideCompleted: boolean; items: { id: string; text: string; done: boolean; due?: string /* ISO date */ }[] }
 column: { title: string; collapsed: boolean }
 board:  { boardId: string }   // child board; boards.parent_board_id = this element's board_id. Title, icon (lucide key from features/boards/icons.ts, or an emoji) and colour live on the boards row, not here.
