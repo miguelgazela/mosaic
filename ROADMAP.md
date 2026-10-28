@@ -16,18 +16,19 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P6 To-dos + Tasks view | Done (`0df4aaf`, merged `cb35203`, Wave A). Migration `0004_tasks.sql` must be run in the SQL Editor; not checked live |
 | P4 Images + files | Done (`d36bcd9`, Wave B). Storage mocked in tests; real upload not checked live |
 | P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
-| P7 Connections | In progress (Wave B); merges last, rebased onto `main` |
-| P8 … P12 | Not started |
+| P7 Connections | Done (`575e61e`, merged `85a3795`, Wave B). Migration `0005_connections_client_id.sql` must be run in the SQL Editor (after 0004); not checked live |
+| P8 … P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
 
-- **Live checks (before or during Wave B):** run `0004_tasks.sql`; then by hand on the real project: create a child board, a column of notes, reload (P3 writes `parent_id`/`sort_key`); to-do with due date shows on `/tasks` and checking it there updates the open board (P6); offline edit flushes on reconnect (S1).
+- **Live checks (before P8):** run `0004_tasks.sql` then `0005_connections_client_id.sql`; draw and reload a line (P7); then by hand on the real project: create a child board, a column of notes, reload (P3 writes `parent_id`/`sort_key`); to-do with due date shows on `/tasks` and checking it there updates the open board (P6); offline edit flushes on reconnect (S1).
 - **P8:** copy/paste or duplicate of a board card shares the same child board — duplicate must deep-copy. Board cards don't register the `dropTarget` hook yet; P8 registers it for move-to-board.
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
 - **Deploy:** `supabase functions deploy milanote-unfurl --project-ref varnswkomuckwgobplld` (JWT verification on, no secrets). Then check YouTube, GitHub, a news site and Pinterest unfurl.
 - **P4 leftovers:** selected-image size badge (engine; P12), selection ring should include the caption, lightbox should cap at ~960 px, drop zone should show cards faintly not dimmed, PDF first-page preview not built. Image `caption` is plain text now (P10 search reads it as a string). Deleted image/file objects stay in the bucket until `milanote-purge` (P8). `Toolbar.tsx` has a special Upload button because the `toolbar` field can't express a non-card tool.
 - **P5 leftovers:** DNS-rebinding gap in the SSRF guard (resolve-then-fetch; see the function README); preview images are hotlinked, not re-hosted; no keyboard shortcut for links.
+- **Flaky test:** `e2e/todo.spec.ts` › "T adds a card; add, check, date, hide completed, undo" failed once in a full run after the P7 merge, then passed alone twice and in two full runs. Make it stable.
 - **Parallel testing:** run Playwright with `E2E_PORT=<free port> npx playwright test` so a session never tests another worktree's dev server.
 
 ## Dependency graph
