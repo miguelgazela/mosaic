@@ -13,6 +13,7 @@ import { SelectionToolbar } from './SelectionToolbar'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { ZoomControls } from './ZoomControls'
 import { useFocusCard } from './focus'
+import { DropZone } from '../features/upload/DropZone'
 
 export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean } = {}) {
   useCanvasShortcuts()
@@ -113,6 +114,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       {!hideEmptyHint && <EmptyHint />}
       <SelectionToolbar />
       {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}
+      <DropZone />
       <ZoomControls />
       {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
     </div>

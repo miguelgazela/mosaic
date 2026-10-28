@@ -62,7 +62,7 @@ Indexes: `(board_id) where deleted_at is null`, `(parent_id)`, GIN `search`, `(t
 
 ```ts
 note:   { doc: TipTapJSON }   // schema: web/src/cards/note/extensions.ts
-image:  { path: string; thumbPath: string; w: number; h: number; caption?: TipTapJSON; name: string; bytes: number }
+image:  { path: string; thumbPath: string; w: number; h: number; caption?: string; name: string; bytes: number }  // caption is plain text (P4); path/thumbPath are set once the upload finishes
 file:   { path: string; name: string; mime: string; bytes: number; previewPath?: string }
 link:   { url: string; title?: string; description?: string; image?: string; favicon?: string; embed?: { provider: 'youtube'|'vimeo'; id: string } }
 todo:   { title?: string; hideCompleted: boolean; items: { id: string; text: string; done: boolean; due?: string /* ISO date */ }[] }

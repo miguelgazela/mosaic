@@ -1,4 +1,6 @@
-import { Hand, MousePointer2, Trash2 } from 'lucide-react'
+import { useRef } from 'react'
+import { Hand, MousePointer2, Trash2, Upload } from 'lucide-react'
+import { dropFiles } from '../features/upload/dropFiles'
 import { listCards } from '../cards/registry'
 import { Tooltip, toast } from '../ui'
 import { addCard } from './actions'
@@ -45,6 +47,7 @@ export function Toolbar() {
   const tool = useBoard((s) => s.tool)
   const setTool = useBoard((s) => s.setTool)
   const cards = listCards().filter((c) => c.toolbar)
+  const picker = useRef<HTMLInputElement>(null)
   return (
     <nav
       aria-label="Tools"
@@ -79,6 +82,20 @@ export function Toolbar() {
           />
         )
       })}
+      <RailButton label="Upload" tip="Upload files" icon={<Upload size={18} />} onClick={() => picker.current?.click()} />
+      <input
+        ref={picker}
+        type="file"
+        multiple
+        hidden
+        data-testid="upload-input"
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])]
+          e.target.value = ''
+          const s = useBoard.getState()
+          dropFiles(files, centerOfView(s.viewport, s.size))
+        }}
+      />
       <div className="flex-1" />
       <hr className="my-1 w-8 border-[var(--divider)]" />
       <RailButton label="Trash" icon={<Trash2 size={18} />} onClick={() => toast('Trash is coming soon')} />
