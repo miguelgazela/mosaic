@@ -9,14 +9,15 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P0 Foundation | Done (`69244fb`) |
 | P1 Canvas engine | Done (`e9cc9e0`) — built before the mockups; D1 brings it in line |
 | Mockups | Done — 46 frames, see `design/README.md` |
-| D1 … P12 | Not started |
+| D1 Design alignment | Session done; not committed. P2 ran at the same time in the same folder (mistake — see rules below) |
+| P2 Persistence + sync | Session done, built on D1's `TopBar`/`SaveStatus`/`OfflineBanner`; not committed, not tested against live Supabase |
+| S1 Stabilise D1 + P2 | Next |
+| P3 … P12 | Not started |
 
 ## Dependency graph
 
 ```
-P0 ✓ ─ P1 ✓
-         ├─ D1 Design alignment ─────┐   (parallel: D1 = UI components, P2 = data layer)
-         └─ P2 Persistence + sync ───┤
+P0 ✓ ─ P1 ✓ ─ D1 Design alignment ─ P2 Persistence + sync ─ S1 Stabilise
                                      ├─ P3 Notes, columns, boards, swatch ─┐
                                      ├─ P4 Images + files                   │  (parallel: separate card folders)
                                      ├─ P5 Links + unfurl fn                │
@@ -29,8 +30,13 @@ P0 ✓ ─ P1 ✓
                                                     └─ P12 Polish, phone, perf, PWA
 ```
 
-- D1 and P2 can run as parallel sessions: D1 owns `web/src/ui/` and the visual layer of `canvas/*.tsx`; P2 owns `canvas/store.ts` persistence hooks and `web/src/lib/sync/`. D1 builds the top bar and save-status component with props; P2 wires real data into them.
-- P3–P7 can run in parallel once D1 and P2 are merged: each owns `web/src/cards/<type>/` plus its migration number (reserve: P4=0002, P5=0003, P6=0004, P7=0005). Shared files (`cards/registry.ts`, `Toolbar.tsx`) — keep edits to one line each.
+### Rules for running sessions
+
+- **One session per checkout.** Two sessions never write in the same folder. A phase that runs alongside another gets its own git worktree and branch (`phase/p3-notes`, …).
+- **Commit before the next phase starts.** Each phase ends with its own commit (or merged branch) on `main`; the next phase starts from that commit.
+- **Sequential when phases share files.** D1 → P2 had to be sequential: both edit `BoardPage.tsx`, `TopBar`, `SaveStatus`, `CanvasView.tsx`. Treat a phase as parallel-safe only if it does not touch `app/`, `canvas/` or `lib/sync/` beyond one-line registrations.
+- **Parallel groups merge one at a time.** For P3–P7 and P9–P11: each in its own worktree, merged into `main` in order (lowest number first); later branches rebase onto `main` before merging.
+- P3–P7 each own `web/src/cards/<type>/` plus a reserved migration number (P4=0002, P5=0003, P6=0004, P7=0005). Shared files (`cards/registry.ts`, `Toolbar.tsx`, `ContextMenu.tsx`) — one-line edits only; anything bigger, stop and note it as a follow-up for the merge.
 
 ## How to use the designs (every phase with UI)
 
@@ -78,6 +84,19 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 **Design refs:** `00-canvas-chrome-states` (save status, breadcrumbs), `00-toasts-banner-highlight` (offline banner), `00-empty-and-loading` (board skeleton), `04-board-file-drop-offline` (offline banner only).
 **Done when:** edits survive reload; two tabs mirror each other < 1 s; offline edit flushes on reconnect.
 
+## S1 — Stabilise D1 + P2 (after D1 finishes)
+**Goal:** D1 and P2 verified together, committed as two commits on `main`, gaps closed. Start only when the D1 session has ended.
+- Review the mixed working tree; split into a D1 commit (`web/src/ui/`, chrome, styling, auth screens) and a P2 commit (`web/src/lib/sync/`, `features/boards/`, `BoardPage` data wiring). If a file can't be split cleanly, commit it with P2 and say so.
+- `BoardPage.tsx`: was overwritten by P2 mid-D1. Compare with D1's design refs; restore any D1 UI lost (known: board load error should use `FullPageMessage`, not ad-hoc buttons).
+- Save status gains an **error** state ("Couldn't save – retrying", icon + word) for failed sends while retrying; P2 currently shows "Saving…".
+- On app start, flush queued edits for **all** boards in IndexedDB, not just the one being opened.
+- Playwright test for P2: edit → reload → edit present; two tabs mirror.
+- Run against live Supabase (`varnswkomuckwgobplld`): edits survive reload, two tabs < 1 s, offline edit flushes on reconnect. Report results.
+- Screenshot comparison for D1 and P2 design refs (see "How to use the designs").
+- Carried to P7: connections are fetched but not stored, subscribed or written.
+
+**Done when:** two commits on `main`; lint, tests, build pass; live checks reported; frames match.
+
 ## P3 — Notes, columns, board cards, colour swatch
 - Note card with TipTap: format toolbar + heading/highlight menus, markdown shortcuts, auto-height, colour; `toPlainText`, `toMarkdown`. Shortcut N.
 - Double-click canvas → new focused note. Paste plain text → note.
@@ -117,6 +136,7 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 **Done when:** due items from nested boards appear in Tasks; toggling syncs both ways; frames match.
 
 ## P7 — Connections (arrows)
+- Sync for connections (carried from P2): store, Realtime subscription, write queue — reuse `lib/sync/`.
 - SVG layer; Line tool (active state on rail); drag from card edge handles; attach/detach endpoints; follow cards.
 - Straight/curved with bend handle; dash; arrowheads; colours; label; hover, selected, drawing, snapping states; line style popover.
 - Selection, delete, undo integration; hit-testing on thin lines.
