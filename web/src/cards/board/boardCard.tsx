@@ -6,7 +6,7 @@ import { colorVar } from '../../canvas/colors'
 import { useBoard } from '../../canvas/store'
 import { BoardPicker } from '../../features/boards/BoardPicker'
 import { boardInfoKey, getBoardRepo, useBoardCount, useBoardInfo, type BoardInfo } from '../../features/boards/boardRepo'
-import { BoardIcon } from '../../features/boards/icons'
+import { BoardTile } from '../../features/boards/icons'
 import { useBoardHref } from '../../features/boards/nav'
 import { newId } from '../../lib/ids'
 import { queryClient } from '../../lib/queryClient'
@@ -45,15 +45,7 @@ function BoardCard({ element: el }: CardProps) {
       }}
       onKeyDown={(e) => { if (e.key === 'Enter' && !editing && !locked && boardId) navigate(href(boardId)) }}
     >
-      <span
-        className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-tile)]"
-        style={{
-          background: info?.color ? `color-mix(in oklab, ${tint}, var(--text) 62%)` : 'var(--card-color-9)',
-          color: info?.color ? '#fff' : 'var(--text-secondary)',
-        }}
-      >
-        <BoardIcon icon={info?.icon ?? null} size={28} />
-      </span>
+      <BoardTile icon={info?.icon ?? null} color={info?.color} size={64} glyph={28} onCard />
       {editing && boardId ? <TitleInput boardId={boardId} initial={title} /> : (
         <div className="w-full truncate text-[length:var(--text-card)] font-semibold leading-[var(--leading-card)]">{title}</div>
       )}

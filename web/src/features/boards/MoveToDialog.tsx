@@ -2,12 +2,12 @@ import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react'
 import { create } from 'zustand'
-import { colorVar } from '../../canvas/colors'
 import { planMove } from '../../canvas/move'
 import { selectedIds, useBoard } from '../../canvas/store'
 import { Button, Dialog } from '../../ui'
 import { ancestorIds, subtreeIds, visibleRows } from './boardTree'
 import { getBoardRepo } from './boardRepo'
+import { BoardTile } from './icons'
 import { moveSelectionToBoard } from './moveCards'
 
 interface MoveDialogState { ids: string[] | null; open(ids: string[]): void; close(): void }
@@ -141,11 +141,9 @@ function MoveToDialog({ ids, onClose }: { ids: string[]; onClose: () => void }) 
                   on ? 'bg-[var(--primary-soft)] font-semibold text-[var(--primary-ink)]' : off ? 'cursor-default text-[var(--text-muted)]' : 'hover:bg-[var(--fill-hover)]'
                 }`}
               >
-                <span
-                  className="h-4 w-4 shrink-0 rounded-[4px]"
-                  style={{ background: node.isHome ? 'var(--text)' : colorVar(node.color) ?? 'var(--card-color-9)', opacity: off ? 0.6 : 1 }}
-                  aria-hidden
-                />
+                <span className="shrink-0" style={{ opacity: off ? 0.6 : 1 }}>
+                  <BoardTile icon={node.isHome ? 'home' : node.icon} color={node.color} size={20} glyph={12} radius="6px" />
+                </span>
                 <span className="min-w-0 flex-1 truncate">{node.title}</span>
                 {node.id === current && <span className="shrink-0 text-[length:var(--text-caption)] font-normal">Current board</span>}
                 {on && <Check size={16} aria-hidden />}

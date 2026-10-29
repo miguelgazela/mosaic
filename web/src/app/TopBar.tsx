@@ -22,7 +22,7 @@ export interface TopBarProps {
   email: string
   onSignOut: () => void
   /** The board shown; enables the board menu. `parentId` null = Home. */
-  board?: { id: string; parentId: string | null }
+  board?: { id: string; parentId: string | null; icon?: string | null; color?: string | null }
   /** FR-54: view-only chip instead of rename, board menu, save status and Share. */
   readOnly?: boolean
 }
@@ -40,7 +40,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
       style={{ height: 'var(--topbar-h)' }}
     >
       <Link to="/" aria-label="Home" className="mr-2 rounded-[var(--radius-ui)]"><LogoMark /></Link>
-      <Breadcrumbs ancestors={ancestors} title={title} onRename={onRename} renameToken={renameToken} readOnly={readOnly} />
+      <Breadcrumbs ancestors={ancestors} title={title} onRename={onRename} renameToken={renameToken} readOnly={readOnly} icon={board?.icon} color={board?.color} />
       {readOnly && <ViewOnlyChip />}
       {board && !readOnly && <BoardMenu boardId={board.id} title={title} parentId={board.parentId} onRename={() => setRenameToken((n) => n + 1)} onShare={() => setSharing(true)} />}
       {!readOnly && <span className="ml-2"><SaveStatus state={saveState} /></span>}

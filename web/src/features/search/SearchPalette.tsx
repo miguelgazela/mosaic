@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, Columns3, CornerDownLeft, File, FileText, ImageIcon, Link2, ListChecks, Loader2, Palette, Search, X, type LucideIcon } from 'lucide-react'
-import { colorVar } from '../../canvas/colors'
-import { BoardIcon } from '../boards/icons'
+import { BoardTile } from '../boards/icons'
 import { getBoardRepo } from '../boards/boardRepo'
 import { useBoardHref, useTrashHref } from '../boards/nav'
 import { readRecent } from '../boards/recent'
@@ -29,11 +28,7 @@ function Marked({ text }: { text: string }) {
 }
 
 function Tile({ icon, color }: { icon: string | null; color: string | null }) {
-  return (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-card)] text-[var(--text-secondary)]" style={{ background: colorVar(color) ?? 'var(--fill-hover)' }}>
-      <BoardIcon icon={icon} size={14} />
-    </span>
-  )
+  return <BoardTile icon={icon} color={color} size={24} glyph={14} radius="var(--radius-card)" />
 }
 
 const kbd = 'inline-flex h-5 min-w-5 items-center justify-center rounded-[var(--radius-chip)] border border-[var(--border)] bg-[var(--fill-hover)] px-1 text-[length:var(--text-caption)] text-[var(--text-secondary)]'

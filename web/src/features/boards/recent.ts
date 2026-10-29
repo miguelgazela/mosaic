@@ -1,4 +1,4 @@
-const KEY = 'milanote.recentBoards'
+const KEY = 'mosaic.recentBoards'
 export const RECENT_MAX = 6
 
 /** `id` first, the rest as they were, no repeats, at most `max`. */

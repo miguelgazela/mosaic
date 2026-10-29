@@ -9,7 +9,7 @@ import { useBoardInfo } from './boardRepo'
 import { useBoardHref } from './nav'
 import { readRecent } from './recent'
 
-const KEY = 'milanote.homeHintDismissed'
+const KEY = 'mosaic.homeHintDismissed'
 const wasDismissed = (): boolean => {
   try { return localStorage.getItem(KEY) === '1' } catch { return false }
 }

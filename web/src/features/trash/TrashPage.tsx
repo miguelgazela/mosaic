@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckSquare, ChevronRight, Clock, File, FileText, Image, LayoutDashboard, Link2, Palette, Columns3, Trash2, type LucideIcon } from 'lucide-react'
 import { useAuth } from '../../auth/AuthProvider'
-import { colorVar } from '../../canvas/colors'
 import { Button, Dialog, LogoMark, toast } from '../../ui'
 import { getBoardRepo, type TrashItem } from '../boards/boardRepo'
+import { BoardTile } from '../boards/icons'
 import { useBoardHref } from '../boards/nav'
 import { TRASH_DAYS, confirmText, daysLeft, deletedLabel, describeItem, wasInText } from './describe'
 
@@ -25,11 +25,11 @@ const URGENT_DAYS = 7
 
 function Tile({ item }: { item: TrashItem }) {
   const Icon = ICONS[item.type] ?? FileText
-  const board = item.kind === 'board'
+  if (item.kind === 'board') return <BoardTile icon={item.icon} color={item.color} size={32} glyph={16} radius="var(--radius-ui)" />
   return (
     <span
       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-ui)]"
-      style={{ background: board ? colorVar(item.color) ?? 'var(--primary-soft)' : 'var(--fill-hover)', color: board ? 'var(--primary-ink)' : 'var(--text-secondary)' }}
+      style={{ background: 'var(--fill-hover)', color: 'var(--text-secondary)' }}
       aria-hidden
     >
       <Icon size={16} />

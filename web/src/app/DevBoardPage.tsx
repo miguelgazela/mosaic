@@ -83,7 +83,7 @@ export function DevBoardPage() {
             email="miguel@example.com"
             onSignOut={() => {}}
             readOnly={readOnly}
-            board={board ? { id: boardId, parentId: board.isHome ? null : board.parentId } : undefined}
+            board={board ? { id: boardId, parentId: board.isHome ? null : board.parentId, icon: board.isHome ? undefined : board.icon, color: board.color } : undefined}
           />
           <OfflineBanner online={online} />
           <div className="relative min-h-0 flex-1">

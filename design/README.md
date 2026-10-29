@@ -92,3 +92,9 @@ Mockup canvas (46 frames, 7 pages): https://claude.ai/artifact/QkoK7NutqreJEkX3m
 | Toasts, banner, highlight | Move + undo, link copied, export ready, upload failed; offline banner; highlight flash | `00-toasts-banner-highlight.png` |
 
 The PNGs are exports. If a PNG and the canvas differ, the canvas is newer — re-export.
+
+## Logo and board icons (D2)
+
+- **App icon:** `design/brand/mosaic-icon-source-2048.png` (RGB, black corners). `design/brand/export-icons.mjs` (sharp; run from `web/` after `npm i --no-save sharp`) cuts the corners to transparency and writes `web/public/mosaic-icon-512.png`, `favicon-32.png`, `favicon-16.png` and `apple-touch-icon.png` (180 px, full-bleed on the icon's cream, no transparency). `LogoMark` (`web/src/ui/Logo.tsx`) renders the 512 px PNG at any `size`.
+- **Lockup:** icon + "Mosaic" 18 px bold, 10 px gap, clear space ¼ of icon width, minimum 16 px.
+- **Board icons:** picker offers star, camera, image, folder, lightbulb, heart, calendar, flag, rocket, palette, book, music (Lucide, 1.75 stroke, round caps). Glyph `--board-icon` `#5B21B6` on tile `--board-tile` `#ECEAE6`; a custom board colour replaces the grey tile. Older keys (layout, pencil, bookmark, globe, home, leaf, archive, film) still render but are not offered. Used by `BoardTile` in board cards (64 px), breadcrumb chip (20), Move-to tree (20), Trash rows (32), search and shared viewer (24).
