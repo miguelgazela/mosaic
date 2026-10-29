@@ -20,7 +20,8 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; live-checked 2026-10-29 |
 | P9 Share links + read-only | Done (merged `741e501`). 0009 applied, `milanote-share` deployed 2026-10-29; live-checked 2026-10-29 |
 | P10 Search | Done (merged `0a566f8`). Migration 0008 applied; owner tried it on the dev db |
-| P11 Export | Built on `claude/p11-export-dffaef` (not merged). No migration. Not checked live |
+| P11 Export | Done (merged `b7efa70`). No migration. Not checked live |
+| D2 Mosaic branding + icons | Not started — runs after P11 merges, before P12. Mockups already updated (name, app icon, board icon set) |
 | P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
@@ -62,7 +63,8 @@ P0 ✓ ─ P1 ✓ ─ D1 ✓ ─ P2 ✓ ─ S1 ✓
                                         ├─ P9  Share links + read-only ─┐
                                         ├─ P10 Search                   │  (parallel)
                                         └─ P11 Export                  ─┘
-                                             └─ P12 Polish, phone, perf, PWA
+                                             └─ D2 Mosaic branding + icons (sequential: touches shared UI)
+                                                  └─ P12 Polish, phone, perf, PWA
 ```
 
 Why waves (checked against the code after S1):
@@ -231,7 +233,19 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 **Design refs:** `00-menus` (export + progress), `00-toasts-banner-highlight` (export ready).
 **Done when:** exported PNG includes images and arrows; markdown zip opens cleanly.
 
-**Status:** built on `claude/p11-export-dffaef`, not merged. No migration, no function change. Board menu → Export: PNG whole board / current view, PDF, Markdown (.zip); progress panel with Cancel; "Export ready: <file>" toast with Download (the file also downloads on its own). Code in `web/src/features/export/` (`run.ts` orchestrates, loaded lazily: `image.ts`, `zip.ts`); `toMarkdown(el, ctx?)` now takes a `MarkdownContext` (sub-board link, asset link, column children). Tested: Vitest (`export.test.ts`: markdown snapshot of every card type, relative links, zip tree plan, name clashes, pixel ratio) and Playwright `p11.spec.ts` (PNG, PDF, view PNG, zip, cancel, image card → red pixels in PNG and file in `assets/`; storage mocked). Not tested against the real project (signed-URL CORS in a real PNG; sub-boards fetched from Supabase). Follow-ups: PNG/PDF render the live DOM, so cards keep on-screen look but a very large board is scaled down to fit 8192 px; link-card preview images are hotlinked and may be left out of the PNG if the host blocks CORS; PDF is one page sized to the picture; markdown zip skips sub-boards it can't read (placeholder file, toast says how many items were left out); Export is not shown in the shared viewer (the board menu is hidden read-only); engine untouched, `exportMode` flag in `lib/storage` makes image cards load full size off-screen during export.
+**Status:** merged (`b7efa70`) from `claude/p11-export-dffaef`. No migration, no function change. Board menu → Export: PNG whole board / current view, PDF, Markdown (.zip); progress panel with Cancel; "Export ready: <file>" toast with Download (the file also downloads on its own). Code in `web/src/features/export/` (`run.ts` orchestrates, loaded lazily: `image.ts`, `zip.ts`); `toMarkdown(el, ctx?)` now takes a `MarkdownContext` (sub-board link, asset link, column children). Tested: Vitest (`export.test.ts`: markdown snapshot of every card type, relative links, zip tree plan, name clashes, pixel ratio) and Playwright `p11.spec.ts` (PNG, PDF, view PNG, zip, cancel, image card → red pixels in PNG and file in `assets/`; storage mocked). Not tested against the real project (signed-URL CORS in a real PNG; sub-boards fetched from Supabase). Follow-ups: PNG/PDF render the live DOM, so cards keep on-screen look but a very large board is scaled down to fit 8192 px; link-card preview images are hotlinked and may be left out of the PNG if the host blocks CORS; PDF is one page sized to the picture; markdown zip skips sub-boards it can't read (placeholder file, toast says how many items were left out); Export is not shown in the shared viewer (the board menu is hidden read-only); engine untouched, `exportMode` flag in `lib/storage` makes image cards load full size off-screen during export.
+
+## D2 — Mosaic branding + icons (retrofit built phases to the new name and icons)
+**Goal:** every screen and component shows the Mosaic name, the Mosaic app icon and the new board icon set, matching the updated mockups. Runs alone, after P11 is merged and before P12 (P12's PWA manifest uses these icons). Touches shared UI, so no parallel sessions.
+- **App icon:** owner puts the icon PNG in `design/brand/` (2048 px original) — export 512 px to `web/public/` (`mosaic-icon-512.png`) plus `favicon`, `apple-touch-icon` (180 px). Replace the placeholder `LogoMark` in `web/src/ui/Logo.tsx` with the icon image (transparent rounded corners already in the 512 px export); keep the `size` prop. Lockup = icon + "Mosaic" 18 px bold, 10 px gap, clear space ¼ of icon width, minimum 16 px (see `00-foundations`).
+- **Name:** no "Milanote" or placeholder name left in UI text, `index.html` title, share viewer ("Made with Mosaic"), sign-in, Not a member, shared-board and 404 screens. **Do not rename** the Supabase schema `milanote`, bucket `milanote-files`, functions `milanote-*` or the `milanote-web` package — they are shared infrastructure (see `CLAUDE.md`).
+- **Board icons:** in `web/src/features/boards/icons.tsx` the picker offers 12 icons: star, camera, image, folder, lightbulb, heart, calendar, flag, rocket, palette, book, music. Keep every existing key (`layout`, `pencil`, `bookmark`, `globe`, `home`, `leaf`, `archive`, `film`, …) so saved boards still render; they just leave the picker grid. Style: glyph `--board-icon` (`#5B21B6`) on tile `--board-tile` (`#ECEAE6`), 1.75 stroke, round caps. Add both tokens to `design/tokens.css`.
+- **Where the board icon appears:** board cards (`cards/board/boardCard.tsx`, 64 px tile), breadcrumb chip (20 px), Move-to tree, Trash rows, search results, icon picker. A custom board colour still replaces the grey tile (e.g. the orange "Hero film" card in `00-card-board-and-swatch`).
+- Re-export the changed frames to `design/screens/` (owner exports from the mockups; filenames unchanged) and update `design/README.md`.
+- Update Playwright selectors/snapshots that depend on the old logo or icon set; add one test that a board with a legacy icon key still renders.
+
+**Design refs:** `00-foundations` (Logo, Lockup and clear space, Board icons), `00-pickers` (board icon picker), `00-card-board-and-swatch`, `01-sign-in-default`, `01-sign-in-phone`, `02-not-a-member-default`, `03-home-populated`, `04-board-populated`, `07-shared-board-default`, `09-not-found-default`.
+**Done when:** those frames match the running app (screenshots compared at 1440 × 900); an existing board with an old icon key still renders; no "Milanote" in visible UI; lint, tests, build pass.
 
 ## P12 — Polish, phone, performance, PWA
 - Keyboard shortcuts sheet (`?`), every shortcut from REQUIREMENTS incl. FR-50.
@@ -239,7 +253,7 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - Phone views (view only, FR-54): board with "View only on phone" strip, shared board, sign in; 16 px inputs, 44 px targets.
 - Laptop 1280 × 800 fit check of tool rail and top bar.
 - Zoomed-out 25 % rendering (thumbnails, viewport culling), memo audit, 500-card perf test.
-- Remaining empty/loading states; PWA manifest + service worker (app shell only).
+- Remaining empty/loading states; PWA manifest + service worker (app shell only); manifest icons come from D2.
 - Accessibility pass against NFR-8.
 
 **Design refs:** `00-shortcuts-and-confirm` (shortcuts sheet), `00-menus` (account menu), `04-board-phone`, `07-shared-board-phone`, `01-sign-in-phone`, `04-board-laptop-1280`, `04-board-zoom-25`, `00-empty-and-loading`.
