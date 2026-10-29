@@ -2,6 +2,7 @@ import { newId as newId_ } from '../../lib/ids'
 import type { CanvasElement } from '../../canvas/types'
 import type { Connection } from '../../canvas/connections'
 import type { BoardNode, TrashItem } from './boardRepo'
+import { markSnippet, queryWords, type SearchRow } from '../search/parse'
 
 /**
  * In-memory stand-in for the `milanote` schema, used by the auth-free dev pages (/dev/board, /dev/trash) and by
@@ -209,6 +210,30 @@ export class DevDb {
       out.push({ kind: 'element', id: e.id, type: e.type, title: '', itemCount: 0, icon: null, color: e.color, content: e.content, plainText: null, wasIn: this.path(e.boardId), deletedAt: new Date(e.deletedAt).toISOString() })
     }
     return out.sort((a, b) => (a.deletedAt < b.deletedAt ? 1 : -1))
+  }
+  /** Stand-in for `milanote.search` (0008): every word is a prefix, all must match; trashed boards/cards are skipped. */
+  search(q: string, lim: number, plain: (e: CanvasElement) => string): SearchRow[] {
+    const words = queryWords(q)
+    if (!words.length) return []
+    const has = (text: string) => {
+      const toks = text.toLowerCase().split(/[^\p{L}\p{N}]+/u)
+      return words.every((w) => toks.some((t) => t.startsWith(w)))
+    }
+    const boards: SearchRow[] = []
+    for (const b of this.boards.values()) {
+      if (b.deletedAt !== null || b.isHome || !(has(b.title) || b.title.toLowerCase().includes(q.trim().toLowerCase()))) continue
+      boards.push({ kind: 'board', id: b.id, boardId: b.id, type: 'board', title: b.title, snippet: markSnippet(b.title, words), path: this.path(b.parentId), icon: b.icon, color: b.color })
+    }
+    const cards: SearchRow[] = []
+    for (const e of this.els.values()) {
+      const b = this.boards.get(e.boardId)
+      const par = e.parentId ? this.els.get(e.parentId) : undefined
+      if (e.deletedAt !== null || e.type === 'board' || !b || b.deletedAt !== null || (par && par.deletedAt !== null)) continue
+      const text = plain(e)
+      if (!has(text)) continue
+      cards.push({ kind: 'element', id: e.id, boardId: e.boardId, type: e.type, title: '', snippet: markSnippet(text, words), path: this.path(e.boardId), icon: null, color: e.color })
+    }
+    return [...boards.slice(0, lim), ...cards.slice(0, lim)]
   }
   restoreElement(id: string): void {
     const e = this.els.get(id)

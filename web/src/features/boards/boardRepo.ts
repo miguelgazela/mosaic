@@ -3,6 +3,8 @@ import type { Connection } from '../../canvas/connections'
 import { supabase } from '../../lib/supabase'
 import type { PathItem } from '../../lib/sync/boardApi'
 import type { ConnRow } from '../../lib/sync/rows'
+import { getCard } from '../../cards/registry'
+import type { SearchRow } from '../search/parse'
 import { DevDb } from './devDb'
 
 export interface BoardInfo {
@@ -51,6 +53,8 @@ export interface BoardRepo {
   trashItems(): Promise<TrashItem[]>
   restoreElement(id: string): Promise<void>
   deleteForever(kind: TrashItem['kind'], id: string): Promise<void>
+  /** `search` (0008): board titles + card text, boards first. */
+  search(q: string, lim?: number): Promise<SearchRow[]>
 }
 
 const rpc = async (fn: string, args: Record<string, unknown>) => {
@@ -114,6 +118,20 @@ const supabaseRepo: BoardRepo = {
   },
   async restoreElement(id) { await rpc('restore_element', { p_id: id }) },
   async deleteForever(kind, id) { await rpc('delete_forever', { p_kind: kind, p_id: id }) },
+  async search(q, lim = 30) {
+    const rows = (await rpc('search', { q, lim })) as Record<string, unknown>[]
+    return rows.map((r) => ({
+      kind: r.kind as SearchRow['kind'],
+      id: r.id as string,
+      boardId: r.board_id as string,
+      type: r.type as string,
+      title: (r.title as string) ?? '',
+      snippet: (r.snippet as string) ?? '',
+      path: (r.board_path as SearchRow['path']) ?? [],
+      icon: (r.icon as string | null) ?? null,
+      color: (r.color as string | null) ?? null,
+    }))
+  },
 }
 
 let repo: BoardRepo = supabaseRepo
@@ -146,6 +164,7 @@ export function memoryBoardRepo(db: DevDb = new DevDb()): BoardRepo & { db: DevD
     async trashItems() { return db.trashItems() },
     async restoreElement(id) { db.restoreElement(id) },
     async deleteForever(kind, id) { db.deleteForever(kind, id) },
+    async search(q, lim = 30) { return db.search(q, lim, (e) => getCard(e.type)?.toPlainText(e) ?? '') },
   }
 }
 

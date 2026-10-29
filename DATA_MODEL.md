@@ -116,7 +116,7 @@ No `anon` grants — shared view goes through `milanote-share` edge function (se
 | `restore_element(p_id)` | (0006) bring a trashed card back with the cards and lines deleted within 5 s of it; raises if its board is trashed |
 | `delete_forever(p_kind, p_id)` | (0006) hard-delete a trashed board (sub-boards, cards, lines cascade) or card. Storage objects stay until `milanote-purge` |
 | `board_subtree(p_root)` | (0006) the board and all boards below it |
-| `search(q text, lim int)` | elements + boards hits with `ts_headline` and board breadcrumb path |
+| `search(q text, lim int default 30)` | (0008) global search, plpgsql, security invoker. Every typed word is a prefix (`shot li` finds "shot list"), all words must match. Returns up to `lim` (max 100) board hits and `lim` card hits: `kind` (`board`/`element`), `id` (board id / card id), `board_id`, `type`, `title`, `snippet` (`ts_headline`; matches wrapped in U+E000 … U+E001), `board_path` (jsonb; for a board hit the path to its parent), `icon`, `color`, `rank`. Boards match on title (tsquery or `ilike`); cards on `elements.search`. Skips Home, trashed boards, trashed cards and cards in a trashed column |
 | `tasks()` | (0004) every item of live to-do cards on live boards, flattened via `jsonb_array_elements(content->'items')`: `element_id, board_id, board_path jsonb, card_title, item_id, item_text, done, due (ISO date text or null), item_pos`. Client groups Overdue / Today / Upcoming / No date |
 | `set_task_done(p_element uuid, p_item text, p_done boolean)` | (0004) flip one item's `done` in place; clears `client_id` so open boards apply the Realtime update |
 | `board_path(board uuid)` | recursive CTE → breadcrumb array |

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle2, Keyboard, LogOut, Search, Trash2 } from 'lucide-react'
 import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel, toast } from '../ui'
@@ -7,6 +7,7 @@ import { BoardMenu } from '../features/boards/BoardMenu'
 import { useTrashHref } from '../features/boards/nav'
 import { ShareDialog } from '../features/share/ShareDialog'
 import { ViewOnlyChip } from '../canvas/ViewOnly'
+import { SearchPalette, useSearchHotkey } from '../features/search/SearchPalette'
 import { Breadcrumbs, type Crumb } from './Breadcrumbs'
 import { SaveStatus, type SaveState } from './SaveStatus'
 
@@ -31,6 +32,8 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
   const trashHref = useTrashHref()
   const [renameToken, setRenameToken] = useState(0)
   const [sharing, setSharing] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  useSearchHotkey(useCallback(() => setSearchOpen((o) => !o), []))
   return (
     <header
       className="flex shrink-0 items-center gap-2 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-4"
@@ -43,7 +46,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
       {!readOnly && <span className="ml-2"><SaveStatus state={saveState} /></span>}
       <div className="flex-1" />
       <button
-        onClick={soon('Search')}
+        onClick={() => setSearchOpen(true)}
         className="flex h-9 w-[220px] items-center gap-2 rounded-[var(--radius-ui)] border border-[var(--border-strong)] bg-[var(--card-bg)] px-3 text-[length:var(--text-card)] text-[var(--text-muted)] hover:bg-[var(--fill-hover)]"
       >
         <Search size={16} /> <span className="flex-1 text-left">Search</span>
@@ -78,6 +81,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
         )}
       </Popover>
       {sharing && board && <ShareDialog boardId={board.id} title={title} onClose={() => setSharing(false)} />}
+      {searchOpen && <SearchPalette onClose={() => setSearchOpen(false)} />}
     </header>
   )
 }

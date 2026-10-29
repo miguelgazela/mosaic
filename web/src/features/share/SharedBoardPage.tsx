@@ -18,7 +18,7 @@ import { fetchShared, ShareGone, type SharePayload } from './viewerApi'
 function sharedRepo(p: SharePayload): BoardRepo {
   const no = () => Promise.reject(new Error('read only'))
   return {
-    create: no, update: no, tree: no, move: no, restoreLines: no, duplicate: no, trash: no, restore: no, trashItems: no, restoreElement: no, deleteForever: no,
+    create: no, update: no, tree: no, move: no, restoreLines: no, duplicate: no, trash: no, restore: no, trashItems: no, restoreElement: no, deleteForever: no, search: no,
     info: async (id) => p.children[id] ? { title: p.children[id].title, icon: p.children[id].icon, color: p.children[id].color } : { title: 'Private board', icon: null, color: null, locked: true },
     count: async (id) => p.children[id]?.count ?? 0,
   }
