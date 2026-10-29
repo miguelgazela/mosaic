@@ -5,6 +5,7 @@ import type { DropHint } from '../cards/types'
 import { addCmd, addConnsCmd, patchCmd } from './commands'
 import { cloneConnections, connectionsAmong } from './connections'
 import { startLineFromCard } from './connectInteractions'
+import { moveCardsToBoard } from '../features/boards/moveCards'
 import { batch } from './undo'
 import { clientToScreen, clientToWorld } from './canvasDom'
 import { alignGuides, boundsOf, rectFromPoints, rectsIntersect, resizeBox, snap, zoomAt, type Rect } from './geometry'
@@ -99,7 +100,7 @@ const pickMove = (e: CanvasElement): Partial<CanvasElement> => {
 }
 
 /** Drop target under the pointer (topmost first), or null. Never a card being dragged. */
-function dropTargetAt(ev: Ev, draggedIds: string[]): { id: string; hint: DropHint } | null {
+function dropTargetAt(ev: Ev, draggedIds: string[], cloneMode: boolean): { id: string; hint: DropHint } | null {
   const s = st()
   const p = clientToWorld(ev.clientX, ev.clientY)
   const dragged = draggedIds.map((i) => s.elements[i]).filter(Boolean)
@@ -108,7 +109,7 @@ function dropTargetAt(ev: Ev, draggedIds: string[]): { id: string; hint: DropHin
     const t = s.elements[id]
     if (t.parentId || draggedIds.includes(id)) continue
     const dt = getCard(t.type)?.dropTarget
-    if (!dt || !dt.accepts(t, dragged)) continue
+    if (!dt || (cloneMode && dt.moveTo) || !dt.accepts(t, dragged)) continue
     const r = elementRect(s, id)
     if (p.x < r.x || p.x > r.x + r.w || p.y < r.y || p.y > r.y + r.h) continue
     if (!best || s.rank[id] > best.rank) best = { id, rank: s.rank[id] }
@@ -171,6 +172,7 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
               ...(box ? { x: box.x, y: box.y, width: box.w } : {}),
             }
           })
+          clones.forEach((c, i) => getCard(c.type)?.onClone?.(c, cur.elements[sorted[i]]))
           cur._add(clones)
           cloneMap = new Map(Object.entries(map))
           primary = map[id]
@@ -195,7 +197,7 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       const doSnap = cloneMode || !ev.altKey
       let ddx = (doSnap ? snap(o.x + dx) : o.x + dx) - o.x
       let ddy = (doSnap ? snap(o.y + dy) : o.y + dy) - o.y
-      lastDrop = dropTargetAt(ev, ids)
+      lastDrop = dropTargetAt(ev, ids, cloneMode)
       cur.setDropHint(lastDrop ? { targetId: lastDrop.id, hint: lastDrop.hint } : null)
       if (doSnap && !lastDrop) {
         // Snap guides: align edges/centres of the moving group with other cards.
@@ -223,6 +225,16 @@ export function startCardDrag(e: ReactPointerEvent, id: string): boolean {
       const zs = keysAfter(others, sorted.length)
       const patches: Record<string, Partial<CanvasElement>> = {}
       sorted.forEach((i, k) => { patches[i] = { z: zs[k] } })
+      // Dropped on a board card: the cards leave this board. Put them back first so Undo restores their spot.
+      if (lastDrop && !cloneMode) {
+        const target = cur.elements[lastDrop.id]
+        const dest = target && getCard(target.type)?.dropTarget?.moveTo?.(target)
+        if (dest) {
+          cur._patch(startIds.map((i) => ({ id: i, patch: before[i] })))
+          moveCardsToBoard(startIds, dest)
+          return
+        }
+      }
       // Dropped on a card that takes drops (column): its patches (parentId, sortKey, width) win.
       if (lastDrop) {
         const target = cur.elements[lastDrop.id]

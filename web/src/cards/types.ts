@@ -46,6 +46,12 @@ export interface DropTarget {
    * returned stays as the drag left it. The engine wraps all patches in one undoable command.
    */
   drop(ctx: DropContext): Record<string, Partial<CanvasElement>>
+  /**
+   * Set when a drop sends the cards to another board instead of rearranging this one (board cards). The engine
+   * then puts the cards back, calls `move_elements` for them and shows the "Moved N cards to <label>" toast;
+   * `drop` is not called. `label` is the destination's name.
+   */
+  moveTo?(target: CanvasElement): { id: string; title: string } | null
 }
 
 /** Extra item in the card context menu (single selection only). */
@@ -91,5 +97,10 @@ export interface CardDefinition {
   /** Content for a new card made from pasted plain text (used by the note card). */
   contentFromText?: (text: string) => Record<string, unknown>
   dropTarget?: DropTarget
+  /**
+   * Called for every copy the engine makes of a card (paste, duplicate, Alt-drag) before the copy is added.
+   * May change `clone.content`; board cards give the copy its own child board.
+   */
+  onClone?: (clone: CanvasElement, source: CanvasElement) => void
   menuItems?: (el: CanvasElement) => CardMenuItem[]
 }

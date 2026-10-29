@@ -138,6 +138,8 @@ export function setColor(color: string | null): void {
 function pasteItems(items: CanvasElement[], offset: number, stayInColumn = false, lines: Connection[] = []): void {
   const idMap = new Map<string, string>()
   const clones = cloneElements(items, { dx: offset, dy: offset }, newId, keysAfter(allZ(), items.length), idMap)
+  const bySource = new Map(items.map((e) => [idMap.get(e.id), e]))
+  for (const c of clones) getCard(c.type)?.onClone?.(c, bySource.get(c.id)!)
   if (stayInColumn) {
     // Duplicating a card that sits in a column: the copy goes right after it, in the same column.
     const sorted = [...items].sort((a, b) => (a.z < b.z ? -1 : 1))

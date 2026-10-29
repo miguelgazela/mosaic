@@ -108,13 +108,22 @@ No `anon` grants — shared view goes through `milanote-share` edge function (se
 | function | does |
 |---|---|
 | `ensure_home()` | create Home board if member has none; return its id |
-| `move_elements(ids uuid[], target_board uuid, at_x, at_y)` | move cards (and their column children, connections between moved cards) to another board; update child boards' `parent_board_id` for board cards |
-| `duplicate_board(board uuid, target_parent uuid)` | deep copy tree; file paths reused (storage objects shared; purge checks references) |
-| `trash_board(board uuid)` / `restore_board(board uuid)` | soft delete / restore subtree |
+| `move_elements(p_ids uuid[], p_target uuid, p_at_x, p_at_y)` | (0006) move cards (and the cards inside moved columns) to another board. Lines between moved cards go along (free line ends shift with the cards); lines joining a moved card to a card left behind are soft-deleted. Board cards re-parent their child board (`parent_board_id`). `p_at_x/y` = where the group's top-left lands, null = below the target's content; moving back with the old top-left restores the layout exactly (Undo). Raises if the target is missing or is inside a moved board. Clears `client_id` so open boards apply the change. Z keys are kept (ties in the target are possible). |
+| `duplicate_board(p_board, p_target_parent, p_new_id default null, p_with_card default false)` | (0006) deep copy of the board and every sub-board below it: cards, column nesting, lines; board cards point at the copied sub-boards. Storage paths in image/file cards are reused (objects shared; `milanote-purge` only removes unreferenced objects). Copy is titled "<title> copy". `p_new_id` lets the client pick the id (paste / duplicate of a board card); `p_with_card` adds a board card next to the original's (board menu). The source may be trashed (cut then paste). Home cannot be duplicated. Returns the new board id |
+| `trash_board(p_board)` / `restore_board(p_board)` | (0006) soft delete / restore a subtree with one `deleted_at` timestamp; the board's card in its parent is deleted / restored with it. Restore brings back only what was trashed together (same timestamp) and raises if the parent board is trashed. Home cannot be trashed |
+| trigger `elements_board_trash` | (0006) deleting a board card (Delete key, cut, undo of a paste) trashes its child board; un-deleting the card (undo) restores it |
+| `trash_items()` | (0006) the trash page: boards whose parent is live (sub-boards of a trashed board are hidden, they go with it) and non-board cards on live boards whose column is live. Columns: `kind` (`board`/`element`), `id`, `type`, `title`, `item_count`, `icon`, `color`, `content`, `plain_text`, `was_in` (board path jsonb), `deleted_at` |
+| `restore_element(p_id)` | (0006) bring a trashed card back with the cards and lines deleted within 5 s of it; raises if its board is trashed |
+| `delete_forever(p_kind, p_id)` | (0006) hard-delete a trashed board (sub-boards, cards, lines cascade) or card. Storage objects stay until `milanote-purge` |
+| `board_subtree(p_root)` | (0006) the board and all boards below it |
 | `search(q text, lim int)` | elements + boards hits with `ts_headline` and board breadcrumb path |
 | `tasks()` | (0004) every item of live to-do cards on live boards, flattened via `jsonb_array_elements(content->'items')`: `element_id, board_id, board_path jsonb, card_title, item_id, item_text, done, due (ISO date text or null), item_pos`. Client groups Overdue / Today / Upcoming / No date |
 | `set_task_done(p_element uuid, p_item text, p_done boolean)` | (0004) flip one item's `done` in place; clears `client_id` so open boards apply the Realtime update |
 | `board_path(board uuid)` | recursive CTE → breadcrumb array |
+
+## Trash and purge
+
+Trashed rows keep `deleted_at`; nothing is moved. A trashed board's cards are not touched (the board is simply hidden: `fetchBoard`, `tasks()` and the board tree filter on `boards.deleted_at`). Items stay 30 days; `milanote-purge` (daily, `supabase/functions/milanote-purge`) then deletes cards and lines with `deleted_at` older than that and boards likewise (foreign keys cascade), and removes `milanote-files` objects that no `elements.content.path / thumbPath / previewPath` refers to, skipping objects younger than 24 h.
 
 ## Storage
 
@@ -131,7 +140,7 @@ grant select on all tables in schema milanote to authenticated;
 ## Setup checklist (manual, once)
 
 1. SQL Editor → run `0001_init.sql`.
-   (Later migrations: `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync — run each once in the SQL Editor. Without 0005 lines still load, but saving them fails until it runs.)
+   (Later migrations: `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync, `0006_board_management.sql` for move / duplicate / trash — run each once in the SQL Editor, in order. Without 0005 lines still load, but saving them fails until it runs. Without 0006 "Move to…", Duplicate board, the board menu's Move to Trash and the Trash page fail. 0002 and 0003 were reserved but never used.)
 2. Settings → API → Exposed schemas → add `milanote` (keep existing entries).
 3. `insert into milanote.members (user_id, display_name) values ('<your auth uid>', 'Miguel');`
 4. Deploy edge functions; set secrets.

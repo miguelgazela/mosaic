@@ -10,6 +10,13 @@ import { WriteQueue } from './writeQueue'
 
 const VIEWPORT_DEBOUNCE_MS = 800
 
+let activeFlush: (() => Promise<void>) | null = null
+
+/** Send the open board's queued edits now (before an RPC that reads or moves those rows). No-op without a synced board. */
+export async function flushActiveBoard(): Promise<void> {
+  await activeFlush?.()
+}
+
 export interface BoardSyncOptions {
   /** Called when the board row changes remotely (title, icon, colour). */
   onBoardChange(row: Partial<BoardMeta>): void
@@ -82,7 +89,7 @@ export async function startBoardSync(data: BoardData, opts: BoardSyncOptions): P
   let prev = store.getState().elements
   const unsubElements = store.subscribe((s) => {
     if (s.elements === prev) return
-    if (muted) { prev = s.elements; return }
+    if (muted || s.syncMuted) { prev = s.elements; return }
     if (s.dragging) return
     const next = s.elements
     const rows: ElementRow[] = []
@@ -95,7 +102,7 @@ export async function startBoardSync(data: BoardData, opts: BoardSyncOptions): P
   let prevConns = store.getState().connections
   const unsubConns = store.subscribe((s) => {
     if (s.connections === prevConns) return
-    if (muted) { prevConns = s.connections; return }
+    if (muted || s.syncMuted) { prevConns = s.connections; return }
     if (s.dragging) return
     const next = s.connections
     const rows: ConnRow[] = []
@@ -207,12 +214,14 @@ export async function startBoardSync(data: BoardData, opts: BoardSyncOptions): P
   const onOnline = () => { queue.retryNow(); connQueue.retryNow(); void resync() }
   const onHidden = () => { if (document.visibilityState === 'hidden') { void flushBoth(); flushViewport() } }
   const onPageHide = () => { void flushBoth(); flushViewport() }
+  activeFlush = flushBoth
   window.addEventListener('online', onOnline)
   document.addEventListener('visibilitychange', onHidden)
   window.addEventListener('pagehide', onPageHide)
 
   return () => {
     stopped = true
+    if (activeFlush === flushBoth) activeFlush = null
     unsubElements()
     unsubConns()
     unsubViewport()

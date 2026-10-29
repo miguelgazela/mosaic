@@ -143,5 +143,6 @@ test('Home shows the onboarding card until dismissed', async ({ page }) => {
   await page.getByRole('button', { name: 'Dismiss' }).click()
   await expect(page.getByTestId('home-onboarding')).toHaveCount(0)
   await page.getByRole('button', { name: 'Add colour' }).click()
-  await expect(page.getByTestId('recent-strip')).toHaveCount(0)
+  // The Recent strip stays on a populated Home (03-home-populated); only the onboarding card goes.
+  await expect(page.getByTestId('recent-strip')).toHaveCount(1)
 })

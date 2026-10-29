@@ -7,6 +7,7 @@ import { elementHeight, useBoard } from '../canvas/store'
 import { HomeEmpty } from '../features/boards/HomeEmpty'
 import { BoardSkeleton } from '../features/boards/BoardSkeleton'
 import { saveSkeleton } from '../features/boards/skeleton'
+import { recordRecent } from '../features/boards/recent'
 import { fetchBoard, renameBoard, type BoardData, type BoardMeta } from '../lib/sync/boardApi'
 import { startBoardSync } from '../lib/sync/boardSync'
 import { useSync } from '../lib/sync/status'
@@ -63,6 +64,7 @@ export function BoardPage() {
     let cancelled = false
     let stop: (() => void) | undefined
     useBoard.getState().setBoardId(data.board.id)
+    if (!data.board.is_home) recordRecent(data.board.id)
     startBoardSync(data, { onBoardChange }).then((s) => {
       if (cancelled) { s(); return }
       stop = s
@@ -123,6 +125,7 @@ export function BoardPage() {
         saveState={saveState}
         email={session?.user.email ?? ''}
         onSignOut={signOut}
+        board={data ? { id: data.board.id, parentId: data.board.is_home ? null : data.board.parent_board_id } : undefined}
       />
       <OfflineBanner online={online} />
       <div className="relative min-h-0 flex-1">
