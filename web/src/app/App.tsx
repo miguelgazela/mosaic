@@ -13,6 +13,7 @@ import { TasksPage } from '../features/tasks/TasksPage'
 import { TrashPage } from '../features/trash/TrashPage'
 import { DevTrashPage } from '../features/trash/DevTrashPage'
 import { MoveToHost } from '../features/boards/MoveToDialog'
+import { SharedBoardPage } from '../features/share/SharedBoardPage'
 import { NotMember } from '../auth/NotMember'
 import { ToastHost } from '../ui'
 import { useFlushAllOnStart } from '../lib/sync/useFlushAllOnStart'
@@ -32,6 +33,8 @@ export function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<RequireMember><HomeRedirect /></RequireMember>} />
             <Route path="/b/:boardId" element={<RequireMember><BoardPage /></RequireMember>} />
+            <Route path="/s/:token" element={<SharedBoardPage />} />
+            <Route path="/s/:token/b/:boardId" element={<SharedBoardPage />} />
             <Route path="/tasks" element={<RequireMember><TasksPage /></RequireMember>} />
             <Route path="/trash" element={<RequireMember><TrashPage /></RequireMember>} />
             {import.meta.env.DEV && <Route path="/dev/trash" element={<DevTrashPage />} />}

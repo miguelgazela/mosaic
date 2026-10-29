@@ -19,6 +19,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
   const selected = useBoard((s) => !!s.selected[id])
   const rank = useBoard((s) => s.rank[id])
   const lifted = useBoard((s) => s.dragging && !!s.selected[id])
+  const readOnly = useBoard((s) => s.readOnly)
   const single = useBoard((s) => s.selected[id] === true && Object.keys(s.selected).length === 1)
   const ref = useRef<HTMLDivElement>(null)
   const def = el ? getCard(el.type) : undefined
@@ -66,10 +67,11 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
       }}
       onPointerDown={(e) => {
         if ((e.target as HTMLElement).closest('[data-nodrag]')) return
+        if (readOnly) return
         if (startCardDrag(e, id)) e.stopPropagation()
       }}
     >
-      {!lifted && <EdgeHandles id={id} skip={single && !inColumn && resize === 'width' ? 'right' : undefined} />}
+      {!lifted && !readOnly && <EdgeHandles id={id} skip={single && !inColumn && resize === 'width' ? 'right' : undefined} />}
       <div className="card-inner" data-lifted={lifted}>
         {Component ? (
           <Component element={el} selected={selected} inColumn={inColumn} renderChild={renderChild} />

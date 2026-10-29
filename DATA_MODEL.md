@@ -101,7 +101,7 @@ Attached end: `*_element_id` set and `*_point = {side: 'top'|'right'|'bottom'|'l
 
 Every table: `enable row level security`; policies for `authenticated`:
 `using (owner_id = auth.uid() and milanote.is_member())`, same `with check`.
-No `anon` grants — shared view goes through `milanote-share` edge function (service role).
+No `anon` grants — shared view goes through `milanote-share` edge function (service role). (0009) `service_role` gets `select` on `milanote.shares` (boards, elements, connections came with 0007). Revoking sets `revoked_at`; rows are never deleted by the app. The function treats unknown, revoked, trashed-board and out-of-tree requests alike (404).
 
 ## RPC functions (`security invoker` unless noted)
 

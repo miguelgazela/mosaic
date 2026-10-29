@@ -9,9 +9,9 @@ import { BoardPicker } from './BoardPicker'
 import { getBoardRepo } from './boardRepo'
 import { useBoardHref } from './nav'
 
-/** Export (P11) and Share (P9) have their place in the menu but stay hidden until those phases land. */
+/** Export (P11) has its place in the menu but stays hidden until that phase lands. */
 const SHOW_EXPORT = false
-const SHOW_SHARE = false
+const SHOW_SHARE = true
 
 const refreshBoards = () => {
   void queryClient.invalidateQueries({ queryKey: ['board-count'] })
@@ -25,10 +25,12 @@ export interface BoardMenuProps {
   /** null for Home, which can't be renamed, copied or trashed. */
   parentId: string | null
   onRename: () => void
+  /** Opens the share dialog (owned by the top bar, which also has a Share button). */
+  onShare?: () => void
 }
 
 /** Board menu (00-menus): Rename, Icon and colour, Duplicate board, Export, Share, Move to Trash. */
-export function BoardMenu({ boardId, title, parentId, onRename }: BoardMenuProps) {
+export function BoardMenu({ boardId, title, parentId, onRename, onShare }: BoardMenuProps) {
   const navigate = useNavigate()
   const href = useBoardHref()
   const [panel, setPanel] = useState(false)
@@ -91,7 +93,7 @@ export function BoardMenu({ boardId, title, parentId, onRename }: BoardMenuProps
           </div>
           {parentId && <MenuItem icon={<Copy size={15} />} onClick={() => { close(); void duplicate() }}>Duplicate board</MenuItem>}
           {SHOW_EXPORT && <MenuItem icon={<Download size={15} />} submenu>Export</MenuItem>}
-          {SHOW_SHARE && <MenuItem icon={<Share2 size={15} />}>Share…</MenuItem>}
+          {SHOW_SHARE && onShare && <MenuItem icon={<Share2 size={15} />} onClick={() => { close(); onShare() }}>Share…</MenuItem>}
           {parentId && (
             <>
               <MenuDivider />

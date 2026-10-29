@@ -16,8 +16,9 @@ import { useCanvasShortcuts } from './useCanvasShortcuts'
 import { UndoControls, ZoomControls } from './ZoomControls'
 import { useFocusCard } from './focus'
 import { DropZone } from '../features/upload/DropZone'
+import { ViewOnlyPill } from './ViewOnly'
 
-export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean } = {}) {
+export function CanvasView({ hideEmptyHint = false, hidePill = false }: { hideEmptyHint?: boolean; hidePill?: boolean } = {}) {
   useCanvasShortcuts()
   useFocusCard()
   const ref = useRef<HTMLDivElement>(null)
@@ -28,6 +29,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
   const grabbing = useBoard((s) => s.panning)
   const grab = useBoard((s) => s.spaceHeld || s.tool === 'hand')
   const drawLine = useBoard((s) => s.tool === 'line')
+  const readOnly = useBoard((s) => s.readOnly)
 
   useEffect(() => {
     const node = ref.current!
@@ -59,17 +61,17 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
 
   return (
     <div className="flex h-full w-full">
-    <Toolbar />
+    {!readOnly && <Toolbar />}
     <div
       ref={ref}
       data-testid="canvas"
       className="relative h-full min-w-0 flex-1 touch-none select-none overflow-hidden bg-[var(--canvas-bg)]"
-      style={{ cursor: grabbing ? 'grabbing' : grab ? 'grab' : drawLine ? 'crosshair' : 'default' }}
+      style={{ cursor: grabbing ? 'grabbing' : grab || readOnly ? 'grab' : drawLine ? 'crosshair' : 'default' }}
       onPointerDown={(e) => {
         setMenu(null)
         if (touch.down(e)) return
         const s = useBoard.getState()
-        if (e.button === 1 || (e.button === 0 && (s.spaceHeld || s.tool === 'hand'))) {
+        if (e.button === 1 || (e.button === 0 && (s.readOnly || s.spaceHeld || s.tool === 'hand'))) {
           e.preventDefault()
           startPan(e)
         } else if (e.button === 0 && s.tool === 'line') {
@@ -80,6 +82,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       }}
       onDoubleClick={(e) => {
         // FR-23: double-click empty canvas → new note, focused.
+        if (useBoard.getState().readOnly) return
         if ((e.target as HTMLElement).closest('[data-card-id], button, input, [data-testid="selection-toolbar"]')) return
         addCard('note', clientToWorld(e.clientX, e.clientY))
       }}
@@ -88,6 +91,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       onPointerCancel={(e) => touch.up(e)}
       onContextMenu={(e) => {
         e.preventDefault()
+        if (useBoard.getState().readOnly) return
         const card = (e.target as HTMLElement).closest<HTMLElement>('[data-card-id]')
         const s = useBoard.getState()
         if (card) {
@@ -97,7 +101,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
         setMenu({ x: e.clientX, y: e.clientY, world: clientToWorld(e.clientX, e.clientY), onCard: !!card })
       }}
       onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes(DRAG_MIME)) return
+        if (readOnly || !e.dataTransfer.types.includes(DRAG_MIME)) return
         e.preventDefault()
         const type = getDraggedTool()
         if (type) setGhost({ type, ...clientToScreen(e.clientX, e.clientY) })
@@ -108,7 +112,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       onDrop={(e) => {
         setGhost(null)
         const type = e.dataTransfer.getData(DRAG_MIME)
-        if (!type) return
+        if (!type || readOnly) return
         e.preventDefault()
         addCard(type, clientToWorld(e.clientX, e.clientY))
       }}
@@ -116,12 +120,13 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       <GridBackground />
       <WorldLayer />
       <MarqueeOverlay />
-      {!hideEmptyHint && <EmptyHint />}
-      <SelectionToolbar />
-      <ConnectionPopover />
+      {!hideEmptyHint && !readOnly && <EmptyHint />}
+      {!readOnly && <SelectionToolbar />}
+      {!readOnly && <ConnectionPopover />}
       {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}
-      <DropZone />
-      <UndoControls />
+      {!readOnly && <DropZone />}
+      {!readOnly && <UndoControls />}
+      {readOnly && !hidePill && <ViewOnlyPill />}
       <ZoomControls />
       {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
     </div>

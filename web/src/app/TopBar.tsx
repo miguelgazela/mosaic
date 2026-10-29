@@ -5,6 +5,8 @@ import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel, toast } from '../ui
 import { Popover } from '../ui/Popover'
 import { BoardMenu } from '../features/boards/BoardMenu'
 import { useTrashHref } from '../features/boards/nav'
+import { ShareDialog } from '../features/share/ShareDialog'
+import { ViewOnlyChip } from '../canvas/ViewOnly'
 import { Breadcrumbs, type Crumb } from './Breadcrumbs'
 import { SaveStatus, type SaveState } from './SaveStatus'
 
@@ -20,21 +22,25 @@ export interface TopBarProps {
   onSignOut: () => void
   /** The board shown; enables the board menu. `parentId` null = Home. */
   board?: { id: string; parentId: string | null }
+  /** FR-54: view-only chip instead of rename, board menu, save status and Share. */
+  readOnly?: boolean
 }
 
-export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut, board }: TopBarProps) {
+export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut, board, readOnly }: TopBarProps) {
   const navigate = useNavigate()
   const trashHref = useTrashHref()
   const [renameToken, setRenameToken] = useState(0)
+  const [sharing, setSharing] = useState(false)
   return (
     <header
       className="flex shrink-0 items-center gap-2 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-4"
       style={{ height: 'var(--topbar-h)' }}
     >
       <Link to="/" aria-label="Home" className="mr-2 rounded-[var(--radius-ui)]"><LogoMark /></Link>
-      <Breadcrumbs ancestors={ancestors} title={title} onRename={onRename} renameToken={renameToken} />
-      {board && <BoardMenu boardId={board.id} title={title} parentId={board.parentId} onRename={() => setRenameToken((n) => n + 1)} />}
-      <span className="ml-2"><SaveStatus state={saveState} /></span>
+      <Breadcrumbs ancestors={ancestors} title={title} onRename={onRename} renameToken={renameToken} readOnly={readOnly} />
+      {readOnly && <ViewOnlyChip />}
+      {board && !readOnly && <BoardMenu boardId={board.id} title={title} parentId={board.parentId} onRename={() => setRenameToken((n) => n + 1)} onShare={() => setSharing(true)} />}
+      {!readOnly && <span className="ml-2"><SaveStatus state={saveState} /></span>}
       <div className="flex-1" />
       <button
         onClick={soon('Search')}
@@ -44,7 +50,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
         <kbd className="rounded-[var(--radius-chip)] bg-[var(--fill-hover)] px-1.5 text-[length:var(--text-caption)] font-medium">⌘K</kbd>
       </button>
       <Button variant="ghost" onClick={() => navigate('/tasks')}><CheckCircle2 size={16} /> Tasks</Button>
-      <Button variant="primary" onClick={soon('Sharing')}>Share</Button>
+      {board && !readOnly && <Button variant="primary" onClick={() => setSharing(true)}>Share</Button>}
       <Popover
         align="right"
         trigger={({ toggle }) => (
@@ -71,6 +77,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
           </MenuPanel>
         )}
       </Popover>
+      {sharing && board && <ShareDialog boardId={board.id} title={title} onClose={() => setSharing(false)} />}
     </header>
   )
 }

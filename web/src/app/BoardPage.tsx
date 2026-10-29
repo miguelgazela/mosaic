@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
@@ -20,6 +20,12 @@ import { TopBar } from './TopBar'
 /** PostgREST code for `.single()` with zero rows; invalid uuids (22P02) also mean "no such board". */
 const isNotFound = (e: unknown) => ['PGRST116', '22P02'].includes((e as { code?: string })?.code ?? '')
 
+const PHONE = '(max-width: 767px)'
+const usePhone = () => useSyncExternalStore(
+  (cb) => { const m = window.matchMedia(PHONE); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb) },
+  () => window.matchMedia(PHONE).matches,
+)
+
 const boardKey = (id: string) => ['board', id] as const
 
 function withTitle(d: BoardData, title: string): BoardData {
@@ -33,6 +39,11 @@ export function BoardPage() {
   const status = useSync((s) => s.status)
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const phone = usePhone() // FR-54: boards are view only on phones
+  useEffect(() => {
+    useBoard.getState().setReadOnly(phone)
+    return () => useBoard.getState().setReadOnly(false)
+  }, [phone])
 
   // Fresh load on every open (gcTime 0); the canvas store owns the data afterwards.
   const board = useQuery({
@@ -125,11 +136,15 @@ export function BoardPage() {
         saveState={saveState}
         email={session?.user.email ?? ''}
         onSignOut={signOut}
+        readOnly={phone}
         board={data ? { id: data.board.id, parentId: data.board.is_home ? null : data.board.parent_board_id } : undefined}
       />
       <OfflineBanner online={online} />
+      {phone && (
+        <div role="status" className="shrink-0 bg-[var(--fill-hover)] px-4 py-2 text-center text-[length:var(--text-sm)] text-[var(--text-secondary)]">View only on phone</div>
+      )}
       <div className="relative min-h-0 flex-1">
-        {readyFor === boardId ? <CanvasView hideEmptyHint={!!data?.board.is_home} /> : <BoardSkeleton key={boardId} boardId={boardId} />}
+        {readyFor === boardId ? <CanvasView hideEmptyHint={!!data?.board.is_home} hidePill={phone} /> : <BoardSkeleton key={boardId} boardId={boardId} />}
         {readyFor === boardId && data?.board.is_home && <HomeEmpty />}
       </div>
     </div>
