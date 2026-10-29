@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle2, Keyboard, LogOut, Search, Trash2 } from 'lucide-react'
-import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel, toast } from '../ui'
+import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel } from '../ui'
+import { useDisplayName } from '../auth/useDisplayName'
+import { openShortcuts } from '../features/shortcuts/store'
 import { Popover } from '../ui/Popover'
 import { BoardMenu } from '../features/boards/BoardMenu'
 import { useTrashHref } from '../features/boards/nav'
@@ -11,8 +13,7 @@ import { SearchPalette, useSearchHotkey } from '../features/search/SearchPalette
 import { Breadcrumbs, type Crumb } from './Breadcrumbs'
 import { SaveStatus, type SaveState } from './SaveStatus'
 
-const initials = (email: string) => email.split('@')[0].replace(/[^a-z0-9]/gi, ' ').trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?'
-const soon = (what: string) => () => toast(`${what} is coming soon`)
+const initials = (name: string) => name.split('@')[0].replace(/[^\p{L}\p{N}]/gu, ' ').trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?'
 
 export interface TopBarProps {
   ancestors: Crumb[]
@@ -29,6 +30,7 @@ export interface TopBarProps {
 
 export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut, board, readOnly }: TopBarProps) {
   const navigate = useNavigate()
+  const name = useDisplayName() || email
   const trashHref = useTrashHref()
   const [renameToken, setRenameToken] = useState(0)
   const [sharing, setSharing] = useState(false)
@@ -62,19 +64,22 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
             onClick={toggle}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[length:var(--text-caption)] font-bold text-[var(--primary-ink)]"
           >
-            {initials(email)}
+            {initials(name)}
           </button>
         )}
       >
         {(close) => (
           <MenuPanel className="w-[240px]" onClose={close}>
             <div className="flex items-center gap-3 px-2.5 pb-2 pt-1">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[length:var(--text-caption)] font-bold text-[var(--primary-ink)]">{initials(email)}</span>
-              <span className="min-w-0 text-[length:var(--text-sm)] text-[var(--text-secondary)]"><span className="block truncate">{email}</span></span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[length:var(--text-caption)] font-bold text-[var(--primary-ink)]">{initials(name)}</span>
+              <span className="min-w-0 text-[length:var(--text-sm)] text-[var(--text-secondary)]">
+                {name !== email && <span className="block truncate text-[length:var(--text-card)] font-semibold text-[var(--text)]">{name}</span>}
+                <span className="block truncate">{email}</span>
+              </span>
             </div>
             <MenuDivider />
             <MenuItem icon={<Trash2 size={15} />} onClick={() => { close(); navigate(trashHref) }}>Trash</MenuItem>
-            <MenuItem icon={<Keyboard size={15} />} shortcut="?" onClick={() => { close(); soon('The shortcuts sheet')() }}>Keyboard shortcuts</MenuItem>
+            <MenuItem icon={<Keyboard size={15} />} shortcut="?" onClick={() => { close(); openShortcuts() }}>Keyboard shortcuts</MenuItem>
             <MenuDivider />
             <MenuItem icon={<LogOut size={15} />} onClick={onSignOut}>Sign out</MenuItem>
           </MenuPanel>
