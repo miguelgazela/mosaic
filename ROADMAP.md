@@ -21,7 +21,12 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 
 ### Open follow-ups
 
-- **Live checks (before P8):** run `0004_tasks.sql` then `0005_connections_client_id.sql`; draw and reload a line (P7); then by hand on the real project: create a child board, a column of notes, reload (P3 writes `parent_id`/`sort_key`); to-do with due date shows on `/tasks` and checking it there updates the open board (P6); offline edit flushes on reconnect (S1).
+- **Live checks — run 2026-10-29 on `main` at `b8f532c`, real project, browser pane:** ✓ child board + column of notes (via "Move into column…") + to-do + arrow all survive reload (P3/P6/P7); ✓ due item shows on `/tasks` under Today with board path, ticking it there updates the open board live (P6); ✓ two tabs mirror, new card seen in the other tab ~0.9 s after the click (P2); ✓ offline edit (simulated by failing requests) shows "Offline – changes will sync", reaches the other tab after reconnect, status back to "Saved" (S1). Not covered: real image upload (P4), link unfurl (P5, not deployed).
+- **Bugs found in live check:**
+  - Board card context menu crashes (`boardCard.tsx` `menuItems`, `el` undefined) when the menu is open and the card's element is gone — `ContextMenu.tsx` passes `elements[singleId]` without checking it exists.
+  - Once, right after opening a just-created child board, Add note / double-click created nothing until reload. Console showed network errors and 401s just before (likely expired session). Did not reproduce afterwards; watch for it.
+  - Double-click on empty canvas didn't create a note in the browser pane (Playwright test passes). Check by hand.
+  - Name typed straight after "Add board" sometimes doesn't stick (board stays "Untitled board").
 - **P8:** copy/paste or duplicate of a board card shares the same child board — duplicate must deep-copy. Board cards don't register the `dropTarget` hook yet; P8 registers it for move-to-board.
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
