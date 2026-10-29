@@ -18,6 +18,7 @@ const boardIdOf = (c: Record<string, unknown>): string | undefined => (typeof c.
 function BoardCard({ element: el }: CardProps) {
   const boardId = boardIdOf(el.content)
   const info = useBoardInfo(boardId).data
+  const locked = info?.locked === true
   const count = useBoardCount(boardId).data
   const editing = useBoard((s) => s.editing === el.id)
   const navigate = useNavigate()
@@ -25,24 +26,24 @@ function BoardCard({ element: el }: CardProps) {
   const down = useRef<{ x: number; y: number } | null>(null)
   const tint = colorVar(info?.color ?? null)
   const title = info?.title ?? 'Untitled board'
-  const sub = count === undefined ? ' ' : count === 0 ? 'Empty' : `${count} ${count === 1 ? 'item' : 'items'}`
+  const sub = locked ? 'Not shared' : count === undefined ? ' ' : count === 0 ? 'Empty' : `${count} ${count === 1 ? 'item' : 'items'}`
   const dropActive = useBoard((s) => s.dropHint?.targetId === el.id)
 
   return (
     <div
       data-testid="board-card"
-      role="link"
-      aria-label={`Open board ${title}`}
-      className="flex cursor-pointer flex-col items-center gap-2 rounded-[var(--radius-card)] px-3 pb-3 pt-3.5 text-center"
+      role={locked ? undefined : 'link'}
+      aria-label={locked ? title : `Open board ${title}`}
+      className={`flex ${locked ? 'cursor-default' : 'cursor-pointer'} flex-col items-center gap-2 rounded-[var(--radius-card)] px-3 pb-3 pt-3.5 text-center`}
       style={{ background: dropActive ? 'var(--primary-soft)' : (tint ?? 'var(--card-bg)') }}
       onPointerDown={(e) => { down.current = { x: e.clientX, y: e.clientY } }}
       onClick={(e) => {
         const d = down.current
-        if (editing || e.shiftKey || e.metaKey || e.ctrlKey || !boardId) return
+        if (editing || locked || e.shiftKey || e.metaKey || e.ctrlKey || !boardId) return
         if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 4) return
         navigate(href(boardId))
       }}
-      onKeyDown={(e) => { if (e.key === 'Enter' && !editing && boardId) navigate(href(boardId)) }}
+      onKeyDown={(e) => { if (e.key === 'Enter' && !editing && !locked && boardId) navigate(href(boardId)) }}
     >
       <span
         className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-tile)]"

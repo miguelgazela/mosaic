@@ -18,7 +18,8 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
 | P7 Connections | Done (`575e61e`, merged `85a3795`, Wave B). Migration `0005_connections_client_id.sql` must be run in the SQL Editor (after 0004); not checked live |
 | P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; live-checked 2026-10-29 |
-| P9 … P12 | Not started — each starts only when the owner says so |
+| P9 | Built on branch, awaiting merge |
+| P10 … P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
 
@@ -202,6 +203,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 
 **Design refs:** `00-share-dialog`, `00-shortcuts-and-confirm` (revoke), `04-board-read-only`, `07-shared-board-default`, `07-shared-board-sub-board`, `07-shared-board-revoked`.
 **Done when:** incognito window opens shared board; revoked token → revoked screen; sub-board access respects toggle; frames match.
+
+**Status:** built on `claude/p9-share-67d2b6`, not merged. **Run `0009_share_grants.sql`** (service role may read `shares`), then deploy `milanote-share` (steps in `supabase/functions/milanote-share/README.md`; not deployed yet). Tested: Deno tests for the function logic (8: tree subset, sub-board toggle, revoked/trashed/out-of-tree → 404, own-files-only signing, no owner id leak); Vitest (read-only store, share helpers); Playwright `p9.spec.ts` (share dialog create/copy/revoke-confirm, board menu Share…, read-only board, `/s/demo` viewer with sub-board, `/s/demo-flat`, revoked, stubbed function 404). Not tested against the real project or a real signed-out browser. Choices: `/s/demo`, `/s/demo-flat`, `/s/demo-revoked` are dev-only fixtures (`features/share/demo.ts`, stripped from prod); shared view opens at the owner's saved viewport (or 0,0); phone boards (< 768 px) are read-only with a strip (`BoardPage`). Follow-ups: shared view has no sub-board counts when "this board only"; links list shows `host/s/<10 chars>…` (full link is copied); Revoke confirm uses the shared Dialog shell, so it has a close X the mock lacks; todo checkboxes in the viewer look clickable but do nothing; no `07-shared-board-phone` frame check; Share on Home is allowed.
 
 ## P10 — Search
 - `search()` RPC with snippets + path; board-title search.

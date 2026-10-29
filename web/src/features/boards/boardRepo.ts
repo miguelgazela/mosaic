@@ -5,7 +5,13 @@ import type { PathItem } from '../../lib/sync/boardApi'
 import type { ConnRow } from '../../lib/sync/rows'
 import { DevDb } from './devDb'
 
-export interface BoardInfo { title: string; icon: string | null; color: string | null }
+export interface BoardInfo {
+  title: string
+  icon: string | null
+  color: string | null
+  /** Shared view only: a board the link does not open. */
+  locked?: true
+}
 
 /** A live board in the tree the Move to… picker shows. */
 export interface BoardNode { id: string; parentId: string | null; title: string; icon: string | null; color: string | null; isHome: boolean }

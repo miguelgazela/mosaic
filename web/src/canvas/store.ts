@@ -52,6 +52,9 @@ export interface BoardState {
   syncMuted: boolean
   /** Board being shown (parent of cards created now); set by the page that owns the canvas. */
   boardId: string | null
+  /** FR-54: shared view and phone. Blocks every command, selection and edit; the engine stays otherwise intact. */
+  readOnly: boolean
+  setReadOnly(v: boolean): void
   setBoardId(id: string | null): void
   /** Card in text/name edit mode (note, column title, board name, swatch). */
   editing: string | null
@@ -125,6 +128,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     marquee: null,
     guides: [],
     boardId: null,
+    readOnly: false,
     syncMuted: false,
     editing: null,
     dropHint: null,
@@ -144,14 +148,15 @@ export const useBoard = create<BoardState>()((set, get) => {
     },
     setViewport: (viewport) => set({ viewport }),
     setSize: (size) => set({ size }),
-    setTool: (tool) => set({ tool }),
+    setTool: (tool) => { if (!get().readOnly) set({ tool }) },
     setSpaceHeld: (spaceHeld) => set({ spaceHeld }),
     setDragging: (dragging) => set({ dragging }),
     setPanning: (panning) => set({ panning }),
     setMarquee: (marquee) => set({ marquee }),
     setGuides: (guides) => set((s) => (guides.length === 0 && s.guides.length === 0 ? s : { guides })),
     setBoardId: (boardId) => set({ boardId }),
-    setEditing: (editing) => set((s) => (s.editing === editing ? s : { editing })),
+    setReadOnly: (readOnly) => set(readOnly ? { readOnly, selected: {}, selectedConn: null, editing: null, editingConn: null, drawing: null, tool: 'select' } : { readOnly }),
+    setEditing: (editing) => set((s) => (s.editing === editing || (s.readOnly && editing !== null) ? s : { editing })),
     setDropHint(dropHint) {
       const cur = get().dropHint
       if (cur === dropHint) return
@@ -159,7 +164,8 @@ export const useBoard = create<BoardState>()((set, get) => {
       set({ dropHint })
     },
     setSelection(ids) {
-      const { elements } = get()
+      const { elements, readOnly } = get()
+      if (readOnly) return
       const selected: Record<string, true> = {}
       for (const id of ids) if (elements[id]) selected[id] = true
       set((s) => ({
@@ -170,6 +176,7 @@ export const useBoard = create<BoardState>()((set, get) => {
       }))
     },
     selectConn(id) {
+      if (get().readOnly) return
       set((s) => ({ selected: {}, selectedConn: id && s.connections[id] ? id : null, editing: null, editingConn: null }))
     },
     setEditingConn: (editingConn) => set({ editingConn }),
@@ -238,14 +245,17 @@ export const useBoard = create<BoardState>()((set, get) => {
     },
 
     exec(c) {
+      if (get().readOnly) return
       history.exec(c)
       set(flags())
     },
     commit(c) {
+      if (get().readOnly) return
       history.push(c)
       set(flags())
     },
     undo() {
+      if (get().readOnly) return
       history.undo()
       set(flags())
     },
@@ -256,6 +266,7 @@ export const useBoard = create<BoardState>()((set, get) => {
       return true
     },
     redo() {
+      if (get().readOnly) return
       history.redo()
       set(flags())
     },

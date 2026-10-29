@@ -5,6 +5,8 @@ export interface SignedUrlCache {
   /** Warm the cache for many paths in one request. */
   prefetch(paths: string[]): void
   clear(): void
+  /** Fill the cache with URLs obtained elsewhere (the share function signs a board's files itself). */
+  seed(urls: Record<string, string>): void
 }
 
 /**
@@ -56,5 +58,6 @@ export function createSignedUrlCache(sign: SignFn, opts: { ttlMs?: number; batch
     get,
     prefetch: (paths) => { for (const p of paths) void get(p) },
     clear: () => ready.clear(),
+    seed: (urls) => { for (const [p, url] of Object.entries(urls)) ready.set(p, { url, at: now() }) },
   }
 }

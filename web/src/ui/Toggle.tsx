@@ -1,10 +1,10 @@
 import { Check } from 'lucide-react'
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 
 interface Props {
   checked: boolean
   onChange: (v: boolean) => void
-  label: string
+  label: ReactNode
   disabled?: boolean
   error?: string
 }

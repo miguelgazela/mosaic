@@ -68,6 +68,8 @@ Contract lives in `web/src/cards/types.ts`. Cards only register hooks; the engin
 
 **Edit mode.** `useBoard().editing` is the id of the card being edited (note text, column title, board name, swatch). Clearing the selection ends it. While it is set, single-key shortcuts are off. Notes render read-only HTML from the TipTap schema (`generateHTML`) and mount an editor only while editing, so big boards stay light.
 
+**Read-only mode (P9, FR-54).** `useBoard().readOnly` makes `exec / commit / undo / redo / setSelection / setEditing / setTool` no-ops, so nothing mutates even if a card calls them. On top of that `CanvasView` drops the tool rail, selection toolbar, context menu, drop zone and undo buttons and shows the "View only" pill; left-drag pans; `CardShell` skips drag, resize and edge handles; shortcuts keep only pan/zoom keys. Used by the shared viewer (`/s/:token`, `features/share/SharedBoardPage.tsx`: loads from `milanote-share`, seeds `signedUrls`, swaps the board repo for one answered from the payload, board cards the link does not open show "Not shared"), by `/dev/board/x?view=1`, and by `BoardPage` on phone widths (< 768 px) with a "View only on phone" strip.
+
 **Boards.** Board cards talk to the backend through `features/boards/boardRepo.ts` (`create / info / count / update`, and since P8 `tree / move / restoreLines / duplicate / trash / restore / trashItems / restoreElement / deleteForever`); the dev pages swap in an in-memory copy (`devDb.ts`, mirrors the 0006 RPCs) so `/dev/board/<id>` and `/dev/trash` work without auth, including move, duplicate and trash flows. Navigation goes through `useBoardHref()` (`/b/:id`, or `/dev/board/:id` on the dev pages).
 
 ## Data flow and sync
@@ -95,7 +97,7 @@ UI event → command (undoable) → Zustand store (instant) → write queue → 
 | Function | Purpose | Auth |
 |---|---|---|
 | `milanote-unfurl` | Fetch URL, parse OpenGraph/oEmbed, return `{title, description, image, favicon, embed}`. Block private IPs (SSRF), 5 s timeout, 1 MB cap. Optionally re-host preview image into bucket. | Member JWT |
-| `milanote-share` | Given share token: validate, return board(s) + elements + connections + signed URLs. Service role inside function only. | Public (token) |
+| `milanote-share` | Given share token (+ optional board id): validate, return that board's elements + connections + child-board info + signed URLs; honours `include_subboards`, `revoked_at`, trashed boards. Service role inside function only. Written in P9, deploy steps in its README. | Public (token, `--no-verify-jwt`) |
 | `milanote-purge` | Cron daily: hard-delete trash > 30 days, remove orphaned storage files. Written in P8; deploy and schedule steps in its README. | `x-cron-secret` header (`--no-verify-jwt`) |
 
 ## Search

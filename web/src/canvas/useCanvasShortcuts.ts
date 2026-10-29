@@ -23,6 +23,18 @@ export function useCanvasShortcuts(): void {
       if (isEditable(e.target)) return
       // A card is entering edit mode (its editor may not have focus yet): keep keys away from single-key shortcuts.
       if (st().editing !== null && e.key !== 'Escape') return
+      if (st().readOnly) {
+        // View only: pan and zoom keys, nothing that edits.
+        if (e.metaKey || e.ctrlKey || e.altKey) return
+        if (e.code === 'Space') st().setSpaceHeld(true)
+        else if (e.key === '+' || e.key === '=') zoomBy(1.25)
+        else if (e.key === '-' || e.key === '_') zoomBy(1 / 1.25)
+        else if (e.key === '0') zoomTo(1)
+        else if (e.code === 'Digit1' && e.shiftKey) fitToContent()
+        else return
+        e.preventDefault()
+        return
+      }
       if (e.code === 'Space') {
         e.preventDefault()
         st().setSpaceHeld(true)
@@ -68,6 +80,7 @@ export function useCanvasShortcuts(): void {
     const blur = () => st().setSpaceHeld(false)
 
     const copy = (e: ClipboardEvent) => {
+      if (st().readOnly) return
       if (isEditable(e.target)) return
       const text = copySelection()
       if (!text) return
@@ -75,6 +88,7 @@ export function useCanvasShortcuts(): void {
       e.preventDefault()
     }
     const cut = (e: ClipboardEvent) => {
+      if (st().readOnly) return
       if (isEditable(e.target)) return
       const text = cutSelection()
       if (!text) return
@@ -82,6 +96,7 @@ export function useCanvasShortcuts(): void {
       e.preventDefault()
     }
     const paste = (e: ClipboardEvent) => {
+      if (st().readOnly) return
       if (isEditable(e.target)) return
       const text = e.clipboardData?.getData('text/plain')
       if (pasteClipboard(text)) { e.preventDefault(); return }
