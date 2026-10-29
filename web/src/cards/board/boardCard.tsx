@@ -156,5 +156,9 @@ export const boardCard: CardDefinition = {
     ]
   },
   toPlainText: () => '',
-  toMarkdown: () => '',
+  toMarkdown: (el, ctx) => {
+    const id = boardIdOf(el.content)
+    const b = id ? ctx?.boardLink(id) : undefined
+    return b ? `- 📁 [${b.title}](${b.href})` : ''
+  },
 }

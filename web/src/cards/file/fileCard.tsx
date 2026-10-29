@@ -121,5 +121,9 @@ export const fileCard: CardDefinition = {
     return c.path ? [{ id: 'download', label: 'Download', icon: Download, run: () => { void download(c) } }] : []
   },
   toPlainText: (el) => readFile(el.content).name,
-  toMarkdown: (el) => `- ${readFile(el.content).name}`,
+  toMarkdown: (el, ctx) => {
+    const name = readFile(el.content).name
+    const href = ctx?.assetLink(el)
+    return href ? `- 📎 [${name}](${href})` : `- 📎 ${name}`
+  },
 }

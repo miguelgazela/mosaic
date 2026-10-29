@@ -176,5 +176,5 @@ export const columnCard: CardDefinition = {
   dropTarget,
   menuItems: (el) => [{ id: 'rename', label: 'Rename', icon: Pencil, run: () => useBoard.getState().setEditing(el.id) }],
   toPlainText: (el) => titleOf(el.content),
-  toMarkdown: (el) => `## ${titleOf(el.content) || 'Untitled column'}`,
+  toMarkdown: (el, ctx) => [`## ${titleOf(el.content) || 'Untitled column'}`, ...(ctx?.childrenMarkdown(el.id) ?? [])].join('\n\n'),
 }

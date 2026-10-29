@@ -106,9 +106,10 @@ UI event → command (undoable) → Zustand store (instant) → write queue → 
 
 ## Export
 
-- PNG: render board offscreen at content bounds with `html-to-image`; images must be loaded via signed URLs with CORS OK (Supabase storage sends CORS headers).
-- PDF: PNG → `jspdf`, auto page size to content aspect.
-- Markdown: pure function over elements (registry `toMarkdown`), tested with Vitest; zip with `jszip`.
+- PNG: `html-to-image` renders the live world layer (`[data-testid=world]`) with its transform overridden to the content bounds (or the current view), so cards, SVG lines and arrowheads look exactly as on screen. Chosen over a hand-written canvas renderer because every card type is React/DOM and a second renderer would have to duplicate each one. While exporting, `lib/storage/exportMode` makes image cards load full-size files even off-screen, and the export waits for every image card's `<img>` to finish. Images come from signed URLs; Supabase storage sends CORS headers, so the canvas is not tainted. Google Fonts CSS is cross-origin, so `image.ts` inlines the font itself (`fontEmbedCSS`). Pixel ratio 2, reduced so no edge exceeds 8192 px.
+- PDF: the PNG on one page sized to the picture (`jspdf`, px units).
+- Markdown: pure function (`features/export/markdown.ts`) over elements via each card's `toMarkdown(el, ctx)`; `ctx` gives relative links for sub-boards, assets and column children. Reading order = top to bottom, then left to right. `jszip` writes one `.md` per board mirroring the board tree (`Home.md`, `Home/Ideas.md`) and `assets/<id8>-<name>` for images/files fetched through signed URLs.
+- `html-to-image`, `jspdf` and `jszip` are dynamic imports (separate chunks), loaded on the first export.
 
 ## Deployment / env
 
