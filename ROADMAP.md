@@ -21,7 +21,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P9 Share links + read-only | Done (merged `741e501`). 0009 applied, `milanote-share` deployed 2026-10-29; live-checked 2026-10-29 |
 | P10 Search | Done (merged `0a566f8`). Migration 0008 applied; owner tried it on the dev db |
 | P11 Export | Done (merged `b7efa70`). No migration. Not checked live |
-| D2 Mosaic branding + icons | Built on branch `claude/d2-branding-cecd0f`, not merged. |
+| D2 Mosaic branding + icons | Done (merged `c3d8686`). Browser keys, clipboard kind and IndexedDB renamed to `mosaic*` (owner had no data). Two icon gaps open, see follow-ups |
 | P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
@@ -42,6 +42,11 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
   - An empty shared sub-board is a blank canvas with no empty-state message.
   - "Shared by" uses `members.display_name`, which is "Milanote E2e" on the owner's row — owner should set a real name.
   - Share dialog's "Include sub-boards" starts off; `shares.include_subboards` defaults true. Pick one.
+- **D2 design check — 2026-10-29 on `main`, 1440 × 900 (headless, signed out):** ✓ sign-in, Not a member, 404, Home, shared viewer header and board menu all show the Mosaic icon/lockup and "Made with Mosaic"; no "Milanote" text seen.
+- **Gaps found in D2 design check:**
+  - Coloured board cards: `BoardTile` with `onCard` mixes the tint 62 % toward text, so lilac/mint boards get a dark grey tile with a white glyph. `00-card-board-and-swatch` ("Hero film") wants a saturated tile in the board's hue (orange tile on a peach card).
+  - Icon picker shows bare glyphs; `00-pickers` shows each icon on a grey `--board-tile` with violet glyph and a violet ring on the selected one.
+  - Not D2: sign-in "Sign in" button looks disabled until fields are filled and "Email me a magic link" is a text button (mock: violet button, outlined secondary button).
 - **P8 (done):** board-card duplicate now deep-copies; board cards register `dropTarget`. Also added undo/redo buttons and empty notes now survive while selected (replaces the P3 discard-on-blur rule).
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
@@ -244,7 +249,7 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - Re-export the changed frames to `design/screens/` (owner exports from the mockups; filenames unchanged) and update `design/README.md`.
 - Update Playwright selectors/snapshots that depend on the old logo or icon set; add one test that a board with a legacy icon key still renders.
 
-**Status:** built on `claude/d2-branding-cecd0f`, awaiting merge. No migration. Icon exports via `design/brand/export-icons.mjs`; `BoardTile`/`BoardIcon` in `features/boards/icons.tsx`; legacy keys tested in `icons.test.tsx`; Playwright `d2.spec.ts`.
+**Status:** merged (`c3d8686`) from `claude/d2-branding-cecd0f`; IndexedDB `milanote-sync` → `mosaic-sync` in `797e17c`. No migration. Icon exports via `design/brand/export-icons.mjs`; `BoardTile`/`BoardIcon` in `features/boards/icons.tsx`; legacy keys tested in `icons.test.tsx`; Playwright `d2.spec.ts`.
 
 **Design refs:** `00-foundations` (Logo, Lockup and clear space, Board icons), `00-pickers` (board icon picker), `00-card-board-and-swatch`, `01-sign-in-default`, `01-sign-in-phone`, `02-not-a-member-default`, `03-home-populated`, `04-board-populated`, `07-shared-board-default`, `09-not-found-default`.
 **Done when:** those frames match the running app (screenshots compared at 1440 × 900); an existing board with an old icon key still renders; no "Milanote" in visible UI; lint, tests, build pass.
