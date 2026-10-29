@@ -2,7 +2,7 @@ import type { CanvasElement } from './types'
 import { defaultStyle, type Connection, type ConnEnd } from './connections'
 import { compareZ } from './order'
 
-const KIND = 'milanote-clone/elements'
+const KIND = 'mosaic/elements'
 
 export const serializeClipboard = (els: CanvasElement[], connections: Connection[] = []): string =>
   JSON.stringify({ kind: KIND, v: 1, items: els, connections })

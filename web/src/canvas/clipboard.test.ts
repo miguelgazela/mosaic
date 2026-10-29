@@ -18,7 +18,7 @@ describe('clipboard', () => {
     expect(parseClipboard(null)).toBeNull()
   })
   it('rejects malformed items', () => {
-    expect(parseClipboard(JSON.stringify({ kind: 'milanote-clone/elements', items: [{ type: 'x' }] }))).toBeNull()
+    expect(parseClipboard(JSON.stringify({ kind: 'mosaic/elements', items: [{ type: 'x' }] }))).toBeNull()
   })
   it('cloneElements: new ids, offset, z order kept, deep content copy', () => {
     const items = [el('b', 'a1'), el('a', 'a0')]

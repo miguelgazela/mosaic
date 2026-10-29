@@ -6,7 +6,7 @@ export interface SkeletonSnapshot {
   rects: { x: number; y: number; w: number; h: number }[]
 }
 
-const key = (id: string) => `milanote:skeleton:${id}`
+const key = (id: string) => `mosaic:skeleton:${id}`
 
 export function saveSkeleton(id: string, snap: SkeletonSnapshot): void {
   try { localStorage.setItem(key(id), JSON.stringify({ ...snap, rects: snap.rects.slice(0, 60) })) } catch { /* private mode / quota */ }
