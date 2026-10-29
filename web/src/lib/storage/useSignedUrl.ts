@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { signedUrls } from './client'
+import { useExportMode } from './exportMode'
 
 /** true once the element has come within `margin` px of the viewport (stays true). */
 export function useNearViewport(ref: RefObject<Element | null>, margin = 400): boolean {
   const [near, setNear] = useState(typeof IntersectionObserver === 'undefined')
+  const exporting = useExportMode((s) => s.on)
   useEffect(() => {
     const node = ref.current
     if (near || !node) return
@@ -11,7 +13,7 @@ export function useNearViewport(ref: RefObject<Element | null>, margin = 400): b
     io.observe(node)
     return () => io.disconnect()
   }, [ref, near, margin])
-  return near
+  return near || exporting
 }
 
 /**

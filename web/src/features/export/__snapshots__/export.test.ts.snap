@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`boardToMarkdown > writes every card type in reading order 1`] = `
+"# Home
+
+## Plan
+
+**Bold**
+
+see
+
+**Tasks**
+- [x] One
+- [ ] Two (due 2026-11-02)
+
+- [Example](https://example.com)
+
+- Sky \`#AABBCC\`
+
+![A cat](assets/i1-cat.png)
+
+_A cat_
+
+- 📎 [spec.pdf](assets/f1-spec.pdf)
+
+- 📁 [Child board](Home/Child%20board.md)
+
+## Ideas
+
+first
+
+second
+"
+`;

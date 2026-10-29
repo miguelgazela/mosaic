@@ -14,6 +14,16 @@ export interface CardProps {
 
 export type ResizeMode = 'none' | 'width' | 'both' | 'aspect'
 
+/** Export-time lookups a card's `toMarkdown` may use. Links are relative to the markdown file being written. */
+export interface MarkdownContext {
+  /** Title and link target for a board card's sub-board (its `.md` file in the zip); undefined when it isn't exported. */
+  boardLink(boardId: string): { title: string; href: string } | undefined
+  /** Link target for an image / file card's bytes inside the zip; undefined when the card has no file. */
+  assetLink(el: CanvasElement): string | undefined
+  /** Markdown of the cards inside a column, in column order, one string per card. */
+  childrenMarkdown(columnId: string): string[]
+}
+
 /** What the clipboard (or a drop) held. `url` is set when `text` is a single http(s) URL. */
 export interface PasteData {
   text?: string
@@ -87,7 +97,8 @@ export interface CardDefinition {
   /** Shown in the left tool rail when set. Label is 12 px under a Lucide icon. */
   toolbar?: { label: string; icon: LucideIcon }
   toPlainText(el: CanvasElement): string
-  toMarkdown(el: CanvasElement): string
+  /** Markdown for export. `ctx` is set by the export; without it, cards fall back to plain names. */
+  toMarkdown(el: CanvasElement, ctx?: MarkdownContext): string
   onDropFiles?: (files: File[], at: Point) => void
   /**
    * Paste routing. The engine asks every registered card in registry order; the first to return

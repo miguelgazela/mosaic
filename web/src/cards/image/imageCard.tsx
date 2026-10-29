@@ -6,6 +6,7 @@ import { addImages, keepLocal, retryUpload, useUploads } from '../../features/up
 import { downloadObject } from '../../lib/storage/client'
 import { isImageFile } from '../../lib/storage/imagePlan'
 import { formatBytes } from '../../lib/storage/paths'
+import { useExportMode } from '../../lib/storage/exportMode'
 import { useNearViewport, useSignedUrl } from '../../lib/storage/useSignedUrl'
 import { toast } from '../../ui'
 import type { CardDefinition, CardProps } from '../types'
@@ -54,7 +55,8 @@ function CaptionEditor({ id, initial }: { id: string; initial: string }) {
 function ImageCard({ element: el, inColumn }: CardProps) {
   const c = readImage(el.content)
   const up = useUploads((s) => s.byId[el.id])
-  const thumbView = useBoard((s) => s.viewport.zoom < 1)
+  const exporting = useExportMode((s) => s.on)
+  const thumbView = useBoard((s) => s.viewport.zoom < 1) && !exporting
   const editing = useBoard((s) => s.editing === el.id)
   const lightboxOpen = useLightbox((s) => s.openId === el.id)
   const root = useRef<HTMLDivElement>(null)
@@ -213,8 +215,9 @@ export const imageCard: CardDefinition = {
     const c = readImage(el.content)
     return [c.caption, c.name].filter(Boolean).join(' ')
   },
-  toMarkdown: (el) => {
+  toMarkdown: (el, ctx) => {
     const c = readImage(el.content)
-    return `![${c.caption || c.name}](${c.name})`
+    const href = ctx?.assetLink(el)
+    return href ? `![${c.caption || c.name}](${href})${c.caption ? `\n\n_${c.caption}_` : ''}` : `_Image: ${c.name}_`
   },
 }

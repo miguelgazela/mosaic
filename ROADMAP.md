@@ -20,7 +20,8 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; live-checked 2026-10-29 |
 | P9 Share links + read-only | Done (merged `741e501`). 0009 applied, `milanote-share` deployed 2026-10-29; live-checked 2026-10-29 |
 | P10 Search | Done (merged `0a566f8`). Migration 0008 applied; owner tried it on the dev db |
-| P11 … P12 | Not started — each starts only when the owner says so |
+| P11 Export | Built on `claude/p11-export-dffaef` (not merged). No migration. Not checked live |
+| P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
 
@@ -229,6 +230,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 
 **Design refs:** `00-menus` (export + progress), `00-toasts-banner-highlight` (export ready).
 **Done when:** exported PNG includes images and arrows; markdown zip opens cleanly.
+
+**Status:** built on `claude/p11-export-dffaef`, not merged. No migration, no function change. Board menu → Export: PNG whole board / current view, PDF, Markdown (.zip); progress panel with Cancel; "Export ready: <file>" toast with Download (the file also downloads on its own). Code in `web/src/features/export/` (`run.ts` orchestrates, loaded lazily: `image.ts`, `zip.ts`); `toMarkdown(el, ctx?)` now takes a `MarkdownContext` (sub-board link, asset link, column children). Tested: Vitest (`export.test.ts`: markdown snapshot of every card type, relative links, zip tree plan, name clashes, pixel ratio) and Playwright `p11.spec.ts` (PNG, PDF, view PNG, zip, cancel, image card → red pixels in PNG and file in `assets/`; storage mocked). Not tested against the real project (signed-URL CORS in a real PNG; sub-boards fetched from Supabase). Follow-ups: PNG/PDF render the live DOM, so cards keep on-screen look but a very large board is scaled down to fit 8192 px; link-card preview images are hotlinked and may be left out of the PNG if the host blocks CORS; PDF is one page sized to the picture; markdown zip skips sub-boards it can't read (placeholder file, toast says how many items were left out); Export is not shown in the shared viewer (the board menu is hidden read-only); engine untouched, `exportMode` flag in `lib/storage` makes image cards load full size off-screen during export.
 
 ## P12 — Polish, phone, performance, PWA
 - Keyboard shortcuts sheet (`?`), every shortcut from REQUIREMENTS incl. FR-50.
