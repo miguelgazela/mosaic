@@ -58,9 +58,9 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
       {board && !readOnly && <Button variant="primary" onClick={() => setSharing(true)}>Share</Button>}
       <Popover
         align="right"
-        trigger={({ toggle }) => (
+        trigger={({ toggle, open }) => (
           <button
-            aria-label="Account"
+            aria-label="Account" aria-haspopup="menu" aria-expanded={open}
             onClick={toggle}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--primary-soft)] text-[length:var(--text-caption)] font-bold text-[var(--primary-ink)]"
           >

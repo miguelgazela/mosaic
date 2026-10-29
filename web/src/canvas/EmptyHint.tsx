@@ -1,7 +1,7 @@
 import { useBoard } from './store'
 
 /** Shown on a board with no cards (00-empty-and-loading / 04-board-empty). */
-export function EmptyHint() {
+export function EmptyHint({ readOnly = false }: { readOnly?: boolean }) {
   const empty = useBoard((s) => Object.keys(s.elements).length === 0)
   if (!empty) return null
   return (
@@ -11,9 +11,11 @@ export function EmptyHint() {
         <div className="absolute left-[34px] top-0 h-[52px] w-[72px] rotate-3 rounded-[var(--radius-card)] bg-[var(--card-color-1)]" style={{ boxShadow: 'var(--shadow-card-hover)' }} />
       </div>
       <h2 className="text-[length:var(--text-body)] font-semibold">This board is empty</h2>
-      <p className="mt-2 max-w-[360px] text-[length:var(--text-card)] text-[var(--text-secondary)]">
-        Double-click anywhere to add a note, or drag a card from the toolbar on the left.
-      </p>
+      {!readOnly && (
+        <p className="mt-2 max-w-[360px] text-[length:var(--text-card)] text-[var(--text-secondary)]">
+          Double-click anywhere to add a note, or drag a card from the toolbar on the left.
+        </p>
+      )}
     </div>
   )
 }

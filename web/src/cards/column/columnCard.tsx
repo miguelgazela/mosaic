@@ -23,6 +23,7 @@ function ColumnCard({ element: el, renderChild }: CardProps) {
   const kids = useBoard(useShallow((s) => childrenOf(s.elements, el.id).map((c) => c.id)))
   const over = useBoard((s) => (s.dropHint?.targetId === el.id ? (s.dropHint.hint.index ?? kids.length) : null))
   const editing = useBoard((s) => s.editing === el.id)
+  const readOnly = useBoard((s) => s.readOnly)
   const title = titleOf(el.content)
   const collapsed = collapsedOf(el.content)
   const dropping = over !== null
@@ -70,7 +71,7 @@ function ColumnCard({ element: el, renderChild }: CardProps) {
       {!collapsed && (
         <div data-column-body className="flex flex-col gap-[var(--column-gap)]">
           {kids.length === 0 ? (
-            <div
+            readOnly ? <div className="h-2" /> : <div
               className="flex h-[108px] items-center justify-center rounded-[var(--radius-ui)] border border-dashed border-[var(--border-strong)] text-[length:var(--text-sm)] text-[var(--text-muted)]"
             >
               Drag cards here to stack them

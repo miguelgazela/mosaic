@@ -7,7 +7,7 @@ import { Button, Dialog, LogoMark, toast } from '../../ui'
 import { getBoardRepo, type TrashItem } from '../boards/boardRepo'
 import { BoardTile } from '../boards/icons'
 import { useBoardHref } from '../boards/nav'
-import { TRASH_DAYS, confirmText, daysLeft, deletedLabel, describeItem, wasInText } from './describe'
+import { TRASH_DAYS, confirmText, daysLeft, deletedLabel, describeItem, visibleTrash, wasInText } from './describe'
 
 const initials = (email: string) => email.split('@')[0].replace(/[^a-z0-9]/gi, ' ').trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?'
 
@@ -84,6 +84,7 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
   const qc = useQueryClient()
   const repo = getBoardRepo()
   const items = useQuery({ queryKey: TRASH_KEY, queryFn: () => getBoardRepo().trashItems(), refetchOnWindowFocus: true, staleTime: 0 })
+  const list = items.data ? visibleTrash(items.data) : []
   const [asking, setAsking] = useState<TrashItem | null>(null)
   const now = Date.now()
   const email = session?.user.email ?? ''
@@ -132,7 +133,7 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
             <p className="text-[var(--danger)]">Couldn’t load the trash.</p>
             <Button onClick={() => void items.refetch()}>Try again</Button>
           </div>
-        ) : items.data.length === 0 ? (
+        ) : list.length === 0 ? (
           <div data-testid="trash-empty" className="mt-8 flex flex-col items-center rounded-[var(--radius-menu)] border border-[var(--border)] bg-[var(--card-bg)] px-6 py-16 text-center">
             <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[var(--fill-hover)]"><Trash2 size={24} aria-hidden /></span>
             <h2 className="mt-4 text-[length:var(--text-body)] font-semibold">Trash is empty</h2>
@@ -151,7 +152,7 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
                 </tr>
               </thead>
               <tbody>
-                {items.data.map((i) => (
+                {list.map((i) => (
                   <Row key={`${i.kind}:${i.id}`} item={i} now={now} onRestore={() => restore.mutate(i)} onDelete={() => setAsking(i)} />
                 ))}
               </tbody>

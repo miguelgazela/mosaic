@@ -13,6 +13,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [wait, setWait] = useState(0)
@@ -27,16 +28,20 @@ export function LoginPage() {
 
   const onPassword = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true)
     setError(null)
+    if (!email.trim()) { setEmailError('Enter your email first.'); return }
+    if (!password) { setError('Enter your password, or use a magic link.'); return }
+    setBusy(true)
     const { error: err } = await supabase.auth.signInWithPassword({ email, password })
     setBusy(false)
     if (err) setError(err.message)
   }
 
   const sendLink = async () => {
-    setBusy(true)
     setError(null)
+    if (!email.trim()) { setEmailError('Enter your email first.'); return }
+    setEmailError(null)
+    setBusy(true)
     const { error: err } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
     setBusy(false)
     if (err) { setError(err.message); return }
@@ -75,12 +80,12 @@ export function LoginPage() {
         <TextField
           label="Email"
           type="email"
-          required
           autoComplete="email"
           placeholder="you@example.com"
           className="!h-11"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          error={emailError}
+          onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
         />
         <TextField
           label="Password"
@@ -91,12 +96,12 @@ export function LoginPage() {
           error={error}
           className="!h-11"
         />
-        <Button variant="primary" type="submit" block className="h-11" disabled={busy || !password}>Sign in</Button>
+        <Button variant="primary" type="submit" block className="h-11" disabled={busy}>Sign in</Button>
       </form>
       <div className="my-4 flex items-center gap-3 text-[length:var(--text-sm)] text-[var(--text-secondary)]">
         <span className="h-px flex-1 bg-[var(--divider)]" />or<span className="h-px flex-1 bg-[var(--divider)]" />
       </div>
-      <Button block className="h-11" disabled={busy || !email} onClick={sendLink}>
+      <Button block className="h-11" disabled={busy} onClick={sendLink}>
         <Mail size={16} /> Email me a magic link
       </Button>
     </AuthShell>

@@ -112,6 +112,7 @@ function ItemRow({
 }
 
 function TodoCard({ element: el, selected }: CardProps) {
+  const readOnly = useBoard((s) => s.readOnly)
   const todo = useMemo(() => readTodo(el.content), [el.content])
   const today = isoDay(new Date())
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -209,7 +210,7 @@ function TodoCard({ element: el, selected }: CardProps) {
             onGrip={(e) => startGrip(e, item.id)}
           />
         ))}
-        {total === 0 && (
+        {total === 0 && !readOnly && (
           <button
             type="button"
             data-nodrag
@@ -222,9 +223,9 @@ function TodoCard({ element: el, selected }: CardProps) {
           </button>
         )}
       </div>
-      {total > 0 && (
+      {total > 0 && !(readOnly && hidden === 0) && (
         <div data-nodrag onPointerDown={stop} className="mt-1 flex items-center gap-3 text-[length:var(--text-sm)] text-[var(--text-muted)]">
-          <button type="button" onClick={() => addAfter()} className="rounded-[var(--radius-chip)] py-1 hover:text-[var(--text)]">+ Add item</button>
+          {!readOnly && <button type="button" onClick={() => addAfter()} className="rounded-[var(--radius-chip)] py-1 hover:text-[var(--text)]">+ Add item</button>}
           {hidden > 0 ? (
             <span className="flex items-center gap-1.5"><EyeOff size={14} aria-hidden /> {hidden} completed hidden.
               <button type="button" onClick={() => save('Show completed', { hideCompleted: false })} className="font-semibold text-[var(--link)] hover:underline">Show</button>

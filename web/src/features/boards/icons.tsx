@@ -42,7 +42,7 @@ export function BoardIcon({ icon, size = 28 }: { icon: string | null; size?: num
   return <span style={{ fontSize: size * 0.9, lineHeight: 1 }} aria-hidden>{icon}</span>
 }
 
-/** Rounded tile with the glyph: `--board-icon` on `--board-tile`; a custom board colour replaces the grey tile. `onCard`: the tile sits on a card of that colour, so it goes darker with a white glyph. */
+/** Rounded tile with the glyph: `--board-icon` on `--board-tile`; a custom board colour replaces the grey tile. `onCard`: the tile sits on a card of that colour, so the tile is a saturated version of that hue with a white glyph. */
 export function BoardTile({
   icon, color, size, glyph, radius = 'var(--radius-tile)', onCard = false,
 }: { icon: string | null; color?: string | null; size: number; glyph: number; radius?: string; onCard?: boolean }) {
@@ -50,10 +50,11 @@ export function BoardTile({
   return (
     <span
       data-testid="board-tile"
-      className="flex shrink-0 items-center justify-center"
+      className={`flex shrink-0 items-center justify-center ${tint && onCard ? 'board-tile-hue' : ''}`}
       style={{
         width: size, height: size, borderRadius: radius,
-        background: tint ? (onCard ? `color-mix(in oklab, ${tint}, var(--text) 62%)` : tint) : 'var(--board-tile)',
+        ['--tile-tint' as string]: tint,
+        background: tint ? (onCard ? undefined : tint) : 'var(--board-tile)',
         color: tint && onCard ? '#fff' : 'var(--board-icon)',
       }}
       aria-hidden

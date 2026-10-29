@@ -141,7 +141,7 @@ export function SharedBoardPage() {
     <BoardHrefContext.Provider value={hrefFor}>
       <div className="flex h-full flex-col" data-testid="shared-board">
         <SharedTopBar p={p} hrefFor={hrefFor} />
-        <div className="relative min-h-0 flex-1">{shownFor && <CanvasView hideEmptyHint hidePill />}</div>
+        <div className="relative min-h-0 flex-1">{shownFor && <CanvasView hidePill />}</div>
       </div>
     </BoardHrefContext.Provider>
   )

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { confirmText, daysLeft, deletedLabel, describeItem, docText, wasInText } from './describe'
+import { confirmText, daysLeft, deletedLabel, describeItem, docText, isEmptyNote, visibleTrash, wasInText } from './describe'
 import type { TrashItem } from '../boards/boardRepo'
 
 const item = (p: Partial<TrashItem>): TrashItem => ({
@@ -61,5 +61,15 @@ describe('wasInText / confirmText', () => {
     expect(confirmText(item({ kind: 'board', type: 'board', itemCount: 18 }))).toBe('The board and its 18 items will be gone for good. This can’t be undone.')
     expect(confirmText(item({ kind: 'board', type: 'board', itemCount: 0 }))).toBe('The board will be gone for good. This can’t be undone.')
     expect(confirmText(item({}))).toContain('This card')
+  })
+})
+
+describe('empty notes', () => {
+  it('hides empty notes but keeps notes with text and other items', () => {
+    const empty = item({ id: 'e', plainText: '', content: { doc: { type: 'doc', content: [{ type: 'paragraph' }] } } })
+    const full = item({ id: 'f', plainText: 'hello' })
+    const board = item({ id: 'b', kind: 'board', type: 'board' })
+    expect(isEmptyNote(empty)).toBe(true)
+    expect(visibleTrash([empty, full, board]).map((i) => i.id)).toEqual(['f', 'b'])
   })
 })

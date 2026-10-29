@@ -120,7 +120,7 @@ export function CanvasView({ hideEmptyHint = false, hidePill = false }: { hideEm
       <GridBackground />
       <WorldLayer />
       <MarqueeOverlay />
-      {!hideEmptyHint && !readOnly && <EmptyHint />}
+      {!hideEmptyHint && <EmptyHint readOnly={readOnly} />}
       {!readOnly && <SelectionToolbar />}
       {!readOnly && <ConnectionPopover />}
       {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}

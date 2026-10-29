@@ -69,3 +69,9 @@ body {
 .note-prose p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-muted); float: left; height: 0; pointer-events: none; }
 .note-prose-placeholder { margin: 0; color: var(--text-muted); }
 .note-prose:focus-visible { box-shadow: none; }
+
+/* Board tile on a coloured card: same hue as the card, deeper and more saturated (00-card-board-and-swatch "Hero film"). */
+.board-tile-hue {
+  background: color-mix(in oklab, var(--tile-tint), var(--text) 62%);
+  background: oklch(from var(--tile-tint) calc(l * 0.55) calc(c * 3.2 + 0.06) h);
+}
