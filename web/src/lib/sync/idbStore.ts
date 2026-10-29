@@ -1,7 +1,7 @@
 import type { ElementRow } from './rows'
 import type { QueueStorage } from './writeQueue'
 
-const DB = 'milanote-sync'
+const DB = 'mosaic-sync'
 const STORE = 'queue'
 const PREFIX = 'board:'
 /** Pending connection rows live under their own key so `flushAllQueued` (elements only) never mixes them up. */
