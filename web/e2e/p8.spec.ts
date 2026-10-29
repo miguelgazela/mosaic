@@ -66,7 +66,7 @@ test('drop a note on a board card: moved, toast with Undo, arrow to a card left 
   await expect(note(page, 'Brief')).toHaveCount(0)
   await expect(lines(page)).toHaveCount(0) // the arrow joined it to a card that stayed
 
-  await page.getByRole('button', { name: 'Undo' }).click()
+  await toast(page).getByRole('button', { name: 'Undo' }).click()
   await expect(note(page, 'Brief')).toBeVisible()
   await expect(lines(page)).toHaveCount(1)
 
