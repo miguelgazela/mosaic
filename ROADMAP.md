@@ -262,6 +262,7 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - Zoomed-out 25 % rendering (thumbnails, viewport culling), memo audit, 500-card perf test.
 - Remaining empty/loading states; PWA manifest + service worker (app shell only); manifest icons come from D2.
 - Accessibility pass against NFR-8.
+- Fix the gaps logged under "Gaps found in D2 design check" (coloured board tile, icon picker tiles, sign-in buttons) and the open bugs from the P8/P9 live checks.
 
 **Design refs:** `00-shortcuts-and-confirm` (shortcuts sheet), `00-menus` (account menu), `04-board-phone`, `07-shared-board-phone`, `01-sign-in-phone`, `04-board-laptop-1280`, `04-board-zoom-25`, `00-empty-and-loading`.
 **Done when:** NFRs in REQUIREMENTS §4 measured and met; phone + laptop frames match.
