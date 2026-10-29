@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
@@ -12,6 +12,8 @@ import { fetchBoard, renameBoard, type BoardData, type BoardMeta } from '../lib/
 import { startBoardSync } from '../lib/sync/boardSync'
 import { useSync } from '../lib/sync/status'
 import { toSaveState } from '../lib/sync/saveState'
+import { Eye } from 'lucide-react'
+import { usePhone } from '../lib/usePhone'
 import { Button, OfflineBanner, useOnline } from '../ui'
 import { FullPageMessage } from '../ui/FullPageMessage'
 import { NotFoundPage } from './NotFoundPage'
@@ -19,12 +21,6 @@ import { TopBar } from './TopBar'
 
 /** PostgREST code for `.single()` with zero rows; invalid uuids (22P02) also mean "no such board". */
 const isNotFound = (e: unknown) => ['PGRST116', '22P02'].includes((e as { code?: string })?.code ?? '')
-
-const PHONE = '(max-width: 767px)'
-const usePhone = () => useSyncExternalStore(
-  (cb) => { const m = window.matchMedia(PHONE); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb) },
-  () => window.matchMedia(PHONE).matches,
-)
 
 const boardKey = (id: string) => ['board', id] as const
 
@@ -141,7 +137,7 @@ export function BoardPage() {
       />
       <OfflineBanner online={online} />
       {phone && (
-        <div role="status" className="shrink-0 bg-[var(--fill-hover)] px-4 py-2 text-center text-[length:var(--text-sm)] text-[var(--text-secondary)]">View only on phone</div>
+        <div role="status" className="flex shrink-0 items-center justify-center gap-2 bg-[var(--primary-soft)] px-4 py-2 text-center text-[length:var(--text-sm)] font-medium text-[var(--primary-ink)]"><Eye size={14} aria-hidden /> View only on phone. Edit on a computer.</div>
       )}
       <div className="relative min-h-0 flex-1">
         {readyFor === boardId ? <CanvasView hideEmptyHint={!!data?.board.is_home} hidePill={phone} /> : <BoardSkeleton key={boardId} boardId={boardId} />}

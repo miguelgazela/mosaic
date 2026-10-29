@@ -51,8 +51,9 @@ function RecentStrip() {
 export function HomeEmpty() {
   const empty = useBoard((s) => Object.keys(s.elements).length === 0)
   const [dismissed, setDismissed] = useState(wasDismissed)
+  const readOnly = useBoard((s) => s.readOnly)
   return (
-    <div className="pointer-events-none absolute inset-0 z-10" style={{ left: 'var(--rail-w)' }}>
+    <div className="pointer-events-none absolute inset-0 z-10" style={{ left: readOnly ? 0 : 'var(--rail-w)' }}>
       <RecentStrip />
       {empty && !dismissed && (
         <section
@@ -65,12 +66,12 @@ export function HomeEmpty() {
           <p className="mt-4 text-[length:var(--text-body)] leading-[var(--leading-body)] text-[var(--text-secondary)]">
             Everything starts here. Add a board for each project, then fill it with notes, images, links and to-dos.
           </p>
-          <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-[length:var(--text-card)] leading-[var(--leading-card)] text-[var(--text-secondary)]">
+          {readOnly ? <p className="mt-3 text-[length:var(--text-card)] text-[var(--text-secondary)]">Open Mosaic on a computer to add boards.</p> : <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-[length:var(--text-card)] leading-[var(--leading-card)] text-[var(--text-secondary)]">
             <li>Drag <b className="text-[var(--text)]">Board</b> from the left onto the canvas.</li>
             <li>Name it, then click it to open.</li>
             <li>Double-click anywhere inside to add a note.</li>
-          </ol>
-          <div className="mt-6 flex items-center gap-2">
+          </ol>}
+          {!readOnly && <div className="mt-6 flex items-center gap-2">
             <Button
               variant="primary"
               onClick={() => {
@@ -89,7 +90,7 @@ export function HomeEmpty() {
             >
               Dismiss
             </Button>
-          </div>
+          </div>}
         </section>
       )}
     </div>

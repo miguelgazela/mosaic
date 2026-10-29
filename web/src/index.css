@@ -75,3 +75,10 @@ body {
   background: color-mix(in oklab, var(--tile-tint), var(--text) 62%);
   background: oklch(from var(--tile-tint) calc(l * 0.55) calc(c * 3.2 + 0.06) h);
 }
+
+/* NFR-8 / FR-54 phone: 16 px inputs (no iOS zoom on focus) and 44 px targets in the app chrome. Cards on the canvas keep their size. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']), textarea, select { font-size: 16px; }
+  input:not([type='checkbox']):not([type='radio']):not([data-canvas-input]) { min-height: 44px; }
+  header :is(button, a), [role='dialog'] button, [role='menu'] [role='menuitem'], main button { min-height: 44px; min-width: 44px; }
+}
