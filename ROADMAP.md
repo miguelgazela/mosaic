@@ -17,7 +17,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P4 Images + files | Done (`d36bcd9`, Wave B). Storage mocked in tests; real upload not checked live |
 | P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
 | P7 Connections | Done (`575e61e`, merged `85a3795`, Wave B). Migration `0005_connections_client_id.sql` must be run in the SQL Editor (after 0004); not checked live |
-| P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; not checked live |
+| P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; live-checked 2026-10-29 |
 | P9 … P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
@@ -28,6 +28,10 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
   - Once, right after opening a just-created child board, Add note / double-click created nothing until reload. Console showed network errors and 401s just before (likely expired session). Did not reproduce afterwards; watch for it.
   - Double-click on empty canvas didn't create a note in the browser pane (Playwright test passes). Check by hand.
   - Name typed straight after "Add board" sometimes doesn't stick (board stays "Untitled board").
+- **P8 live check — 2026-10-29 on `main` at `5ee0e97`, real project:** ✓ Move to… picker (tree, current board disabled) moves a note to another board, toast Undo moves it back (checked in DB); ✓ Duplicate board = deep copy (8 cards, 1 line, no shared ids, child board copied with its own new id, card on Home); ✓ Move to Trash → back to Home + toast; listed in `/trash` as "Board, 8 items"; Restore brings back board, its card, its child board and all cards; ✓ Recent strip on Home lists visited boards and skips trashed ones. Not checked: Delete forever (irreversible), drag-onto-board-card, purge.
+- **Bugs found in P8 live check:**
+  - Auto-discarded empty notes are soft-deleted, so `/trash` fills with "Empty note" rows (15 on the test account). They should be hard-deleted, or Trash should hide notes with empty `plain_text`.
+  - Once, with a card selected, clicking the board menu "⋯" did not open it; after Esc it opened. Not reproduced.
 - **P8 (done):** board-card duplicate now deep-copies; board cards register `dropTarget`. Also added undo/redo buttons and empty notes now survive while selected (replaces the P3 discard-on-blur rule).
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
