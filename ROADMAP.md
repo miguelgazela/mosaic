@@ -17,7 +17,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P4 Images + files | Done (`d36bcd9`, Wave B). Storage mocked in tests; real upload not checked live |
 | P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
 | P7 Connections | Done (`575e61e`, merged `85a3795`, Wave B). Migration `0005_connections_client_id.sql` must be run in the SQL Editor (after 0004); not checked live |
-| P8 Board management | Done (merged `9767540`). Run `0006_board_management.sql` then `0007_purge_grants.sql` in the SQL Editor; `milanote-purge` not deployed; not checked live |
+| P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; not checked live |
 | P9 … P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
