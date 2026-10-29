@@ -18,7 +18,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
 | P7 Connections | Done (`575e61e`, merged `85a3795`, Wave B). Migration `0005_connections_client_id.sql` must be run in the SQL Editor (after 0004); not checked live |
 | P8 Board management | Done (merged `9767540`). Migrations 0006 + 0007 applied 2026-10-29; `milanote-purge` not deployed; live-checked 2026-10-29 |
-| P9 Share links + read-only | Done (merged `741e501`). Run `0009_share_grants.sql`; `milanote-share` not deployed; not checked live |
+| P9 Share links + read-only | Done (merged `741e501`). 0009 applied, `milanote-share` deployed 2026-10-29; live-checked 2026-10-29 |
 | P10 Search | Done (merged `0a566f8`). Migration 0008 applied; owner tried it on the dev db |
 | P11 … P12 | Not started — each starts only when the owner says so |
 
@@ -34,6 +34,12 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 - **Bugs found in P8 live check:**
   - Auto-discarded empty notes are soft-deleted, so `/trash` fills with "Empty note" rows (15 on the test account). They should be hard-deleted, or Trash should hide notes with empty `plain_text`.
   - Once, with a card selected, clicking the board menu "⋯" did not open it; after Esc it opened. Not reproduced.
+- **P9 live check — 2026-10-29 on `main` at `52a0862`, real project, deployed `milanote-share`:** ✓ Share dialog empty state → Create link (auto-copied, "Copied", Revoke); ✓ function called with no auth returns the board (8 cards, 1 line), no owner id or email; ✓ `/s/:token` viewer: no tool rail, "Shared by …, view only", line drawn; double-click, Add item + typing, Backspace on a note change nothing; ✓ sub-boards off → sub-board card shows "Private board · Not shared", its URL shows the revoked screen; ✓ sub-boards on → sub-board opens with breadcrumb; ✓ Revoke asks first, link then shows "This link doesn't work any more". Not checked: images/files signed URLs, phone.
+- **Bugs found in P9 live check:**
+  - Viewer still shows edit affordances that do nothing: "+ Add item" on to-dos, "Drag cards here to stack them" in empty columns (plus the known clickable-looking checkboxes).
+  - An empty shared sub-board is a blank canvas with no empty-state message.
+  - "Shared by" uses `members.display_name`, which is "Milanote E2e" on the owner's row — owner should set a real name.
+  - Share dialog's "Include sub-boards" starts off; `shares.include_subboards` defaults true. Pick one.
 - **P8 (done):** board-card duplicate now deep-copies; board cards register `dropTarget`. Also added undo/redo buttons and empty notes now survive while selected (replaces the P3 discard-on-blur rule).
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
