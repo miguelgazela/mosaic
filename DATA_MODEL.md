@@ -140,7 +140,7 @@ grant select on all tables in schema milanote to authenticated;
 ## Setup checklist (manual, once)
 
 1. SQL Editor → run `0001_init.sql`.
-   (Later migrations: `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync, `0006_board_management.sql` for move / duplicate / trash — run each once in the SQL Editor, in order. Without 0005 lines still load, but saving them fails until it runs. Without 0006 "Move to…", Duplicate board, the board menu's Move to Trash and the Trash page fail. 0002 and 0003 were reserved but never used.)
+   (Later migrations: `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync, `0006_board_management.sql` for move / duplicate / trash, `0007_purge_grants.sql` so `milanote-purge` (service role) can read and delete trash rows — run each once in the SQL Editor, in order. Without 0005 lines still load, but saving them fails until it runs. Without 0006 "Move to…", Duplicate board, the board menu's Move to Trash and the Trash page fail. 0002 and 0003 were reserved but never used.)
 2. Settings → API → Exposed schemas → add `milanote` (keep existing entries).
 3. `insert into milanote.members (user_id, display_name) values ('<your auth uid>', 'Miguel');`
 4. Deploy edge functions; set secrets.
