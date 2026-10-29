@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ArrowDownToLine, ArrowUpToLine, Copy, Palette, Trash2, Columns3 } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpToLine, Copy, FolderInput, Palette, Trash2, Columns3 } from 'lucide-react'
 import { getCard, listCards } from '../cards/registry'
 import { MenuDivider, MenuItem, MenuPanel } from '../ui'
+import { openMoveDialog } from '../features/boards/MoveToDialog'
 import { addCard, deleteSelection, duplicateSelection, moveSelectionInto, pasteClipboard, pasteData, reorder, selectAll, setColor } from './actions'
 import { toPasteData } from './paste'
 import { ColorSwatches } from './ColorSwatches'
@@ -47,16 +48,17 @@ export function ContextMenu({ menu, onClose }: { menu: MenuState; onClose: () =>
     const els = ids.map((id) => s.elements[id]).filter(Boolean)
     const single = els.length === 1 ? els[0] : null
     const colorable = els.some((e) => getCard(e.type)?.colorable !== false)
-    // Cards that can take the selection (columns), excluding the selection itself.
-    const movable = els.filter((e) => !getCard(e.type)?.dropTarget)
-    const targets = movable.length
+    // Cards that can take the selection into themselves (columns; board cards send it to another board instead).
+    const targets = els.length
       ? Object.values(s.elements)
-          .filter((t) => !ids.includes(t.id) && getCard(t.type)?.dropTarget?.accepts(t, movable))
+          .filter((t) => { const dt = getCard(t.type)?.dropTarget; return !ids.includes(t.id) && dt && !dt.moveTo && dt.accepts(t, els) })
           .map((t) => ({ id: t.id, label: getCard(t.type)!.toPlainText(t) || 'Untitled column' }))
       : []
     return { singleId: single?.id ?? null, singleType: single?.type ?? null, colorable, targets }
   })
-  const extra = card.singleId && card.singleType ? getCard(card.singleType)?.menuItems?.(useBoard.getState().elements[card.singleId]) ?? [] : []
+  // The card can be gone while the menu is open (deleted in another tab, undo): then it has no extra items.
+  const single = useBoard((s) => (card.singleId ? s.elements[card.singleId] : undefined))
+  const extra = single && card.singleType ? getCard(card.singleType)?.menuItems?.(single) ?? [] : []
   const adders = listCards().filter((c) => c.shortcut)
 
   return (
@@ -93,6 +95,7 @@ export function ContextMenu({ menu, onClose }: { menu: MenuState; onClose: () =>
                 )}
               </div>
             )}
+            <MenuItem icon={<FolderInput size={15} />} onClick={run(openMoveDialog)}>Move to…</MenuItem>
             {card.targets.length > 0 && (
               <div className="relative">
                 <MenuItem icon={<Columns3 size={15} />} submenu onClick={() => setPanel(panel === 'column' ? null : 'column')}>Move into column…</MenuItem>

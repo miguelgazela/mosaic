@@ -56,7 +56,11 @@ Contract lives in `web/src/cards/types.ts`. Cards only register hooks; the engin
 
 **Paste routing — `onPaste?(data, at): boolean`.** `data = { text?, url?, files? }` (`url` is set only when the clipboard text is a single http(s) URL; built by `canvas/paste.ts`). The paste handler (`useCanvasShortcuts` → `actions.pasteData`) first tries our own clipboard JSON (copied cards), then asks each registered card in registry order; the first to return `true` owns the paste and creates its card (`addCard(type, at, { content })`). If nobody takes it, plain text becomes a note (via the note card's `contentFromText`). P4 registers files/images, P5 registers `url`; neither touches the engine. Registry order matters: put specific hooks (link, image) before anything greedy.
 
-**Drop targets — `dropTarget?: { accepts(target, dragged), hover?(target, pointer), drop(ctx) }`.** While cards are dragged, the engine hit-tests the pointer against top-level cards that have a `dropTarget` and `accepts` the dragged set (topmost wins), and stores `{ targetId, hint }` in `useBoard().dropHint` (cards read it to draw the highlight and insert line). On release it calls `drop`, which returns element patches (`parentId`, `sortKey`, `width`, …); the engine merges them into the one undoable "Move" command. Columns implement it (insert index from child midpoints). P8 can reuse it for "drop onto board card = move to that board"; the board card does not register a `dropTarget` yet.
+**Drop targets — `dropTarget?: { accepts(target, dragged), hover?(target, pointer), drop(ctx) }`.** While cards are dragged, the engine hit-tests the pointer against top-level cards that have a `dropTarget` and `accepts` the dragged set (topmost wins), and stores `{ targetId, hint }` in `useBoard().dropHint` (cards read it to draw the highlight and insert line). On release it calls `drop`, which returns element patches (`parentId`, `sortKey`, `width`, …); the engine merges them into the one undoable "Move" command. Columns implement it (insert index from child midpoints). **P8:** board cards register a `dropTarget` whose `moveTo(target)` names the destination board: the engine then puts the dragged cards back, calls `moveCardsToBoard` (`features/boards/moveCards.ts`) and `drop` is not used. Alt-drag copies ignore `moveTo` targets.
+
+**Moving cards between boards.** `moveCardsToBoard(ids, dest)` is one undoable command: the cards and the lines touching them leave the store through `withoutSync` (`store.syncMuted`, so the write queue sends no tombstones), the queued edits are flushed (`flushActiveBoard`), then `move_elements` runs (`BoardRepo.move`). Undo moves them back to the old top-left and re-saves the lines the move removed. Remote moves are serialised so a quick Undo comes after its move. The "Moved N cards to X" toast carries the Undo button. Known gap: another tab on the source board keeps showing the cards until it re-syncs (Realtime filters on `board_id` and the updated row no longer matches).
+
+**Copies of board cards.** `CardDefinition.onClone(clone, source)` is called for every copy (paste, duplicate, Alt-drag). The board card gives the copy a new `boardId` and calls `duplicate_board` with that id, so a copy never shares its child board.
 
 **Children of a column.** `CanvasElement.parentId` + `sortKey` (DB: `parent_id`, `sort_key`). A card with `parentId` set is not in the top-level `CardLayer`; the column renders it through `renderChild(id)` (passed in `CardProps`), stacked by `sortKey`, full column width; its `x/y` are ignored. Dragging a child lifts it out first (position from its DOM box), so after that it behaves like any card. Delete, copy and duplicate take a column's children along (`columns.ts › withChildren`). `elementRect()` of a child returns its column's rect (for the selection toolbar).
 
@@ -64,7 +68,7 @@ Contract lives in `web/src/cards/types.ts`. Cards only register hooks; the engin
 
 **Edit mode.** `useBoard().editing` is the id of the card being edited (note text, column title, board name, swatch). Clearing the selection ends it. While it is set, single-key shortcuts are off. Notes render read-only HTML from the TipTap schema (`generateHTML`) and mount an editor only while editing, so big boards stay light.
 
-**Boards.** Board cards talk to the backend through `features/boards/boardRepo.ts` (`create / info / count / update`); the dev pages swap in an in-memory copy so `/dev/board/<id>` works without auth. Navigation goes through `useBoardHref()` (`/b/:id`, or `/dev/board/:id` on the dev pages).
+**Boards.** Board cards talk to the backend through `features/boards/boardRepo.ts` (`create / info / count / update`, and since P8 `tree / move / restoreLines / duplicate / trash / restore / trashItems / restoreElement / deleteForever`); the dev pages swap in an in-memory copy (`devDb.ts`, mirrors the 0006 RPCs) so `/dev/board/<id>` and `/dev/trash` work without auth, including move, duplicate and trash flows. Navigation goes through `useBoardHref()` (`/b/:id`, or `/dev/board/:id` on the dev pages).
 
 ## Data flow and sync
 
@@ -92,7 +96,7 @@ UI event → command (undoable) → Zustand store (instant) → write queue → 
 |---|---|---|
 | `milanote-unfurl` | Fetch URL, parse OpenGraph/oEmbed, return `{title, description, image, favicon, embed}`. Block private IPs (SSRF), 5 s timeout, 1 MB cap. Optionally re-host preview image into bucket. | Member JWT |
 | `milanote-share` | Given share token: validate, return board(s) + elements + connections + signed URLs. Service role inside function only. | Public (token) |
-| `milanote-purge` | Cron daily: hard-delete trash > 30 days, remove orphaned storage files. | Cron secret |
+| `milanote-purge` | Cron daily: hard-delete trash > 30 days, remove orphaned storage files. Written in P8; deploy and schedule steps in its README. | `x-cron-secret` header (`--no-verify-jwt`) |
 
 ## Search
 

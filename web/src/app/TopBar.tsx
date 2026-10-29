@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle2, Keyboard, LogOut, Search, Trash2 } from 'lucide-react'
 import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel, toast } from '../ui'
 import { Popover } from '../ui/Popover'
+import { BoardMenu } from '../features/boards/BoardMenu'
+import { useTrashHref } from '../features/boards/nav'
 import { Breadcrumbs, type Crumb } from './Breadcrumbs'
 import { SaveStatus, type SaveState } from './SaveStatus'
 
@@ -15,17 +18,22 @@ export interface TopBarProps {
   saveState: SaveState
   email: string
   onSignOut: () => void
+  /** The board shown; enables the board menu. `parentId` null = Home. */
+  board?: { id: string; parentId: string | null }
 }
 
-export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut }: TopBarProps) {
+export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut, board }: TopBarProps) {
   const navigate = useNavigate()
+  const trashHref = useTrashHref()
+  const [renameToken, setRenameToken] = useState(0)
   return (
     <header
       className="flex shrink-0 items-center gap-2 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-4"
       style={{ height: 'var(--topbar-h)' }}
     >
       <Link to="/" aria-label="Home" className="mr-2 rounded-[var(--radius-ui)]"><LogoMark /></Link>
-      <Breadcrumbs ancestors={ancestors} title={title} onRename={onRename} />
+      <Breadcrumbs ancestors={ancestors} title={title} onRename={onRename} renameToken={renameToken} />
+      {board && <BoardMenu boardId={board.id} title={title} parentId={board.parentId} onRename={() => setRenameToken((n) => n + 1)} />}
       <span className="ml-2"><SaveStatus state={saveState} /></span>
       <div className="flex-1" />
       <button
@@ -56,7 +64,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
               <span className="min-w-0 text-[length:var(--text-sm)] text-[var(--text-secondary)]"><span className="block truncate">{email}</span></span>
             </div>
             <MenuDivider />
-            <MenuItem icon={<Trash2 size={15} />} onClick={() => { close(); soon('Trash')() }}>Trash</MenuItem>
+            <MenuItem icon={<Trash2 size={15} />} onClick={() => { close(); navigate(trashHref) }}>Trash</MenuItem>
             <MenuItem icon={<Keyboard size={15} />} shortcut="?" onClick={() => { close(); soon('The shortcuts sheet')() }}>Keyboard shortcuts</MenuItem>
             <MenuDivider />
             <MenuItem icon={<LogOut size={15} />} onClick={onSignOut}>Sign out</MenuItem>

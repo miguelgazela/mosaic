@@ -12,6 +12,21 @@ import { docOf, docToMarkdown, docToText, isEmptyDoc, textToDoc, type DocNode } 
 
 const SAVE_DELAY = 400
 
+/**
+ * An empty note is not worth keeping, but it stays while it is selected, so you can drag it or click back into it
+ * before typing. Once it is deselected (and not being edited again) and still empty, it goes. Lives outside the
+ * editor component because the editor unmounts as soon as editing ends.
+ */
+function discardWhenDeselected(id: string): void {
+  const unsub = useBoard.subscribe((s) => {
+    const el = s.elements[id]
+    if (!el) { unsub(); return }
+    if (s.selected[id] || s.editing === id) return
+    unsub()
+    if (isEmptyDoc(docOf(el.content))) s.exec(removeCmd([el]))
+  })
+}
+
 /** Read-only render: plain HTML from the schema, no editor instance per card (500-card boards stay light). */
 const NoteView = memo(function NoteView({ doc }: { doc: DocNode }) {
   const html = useMemo(() => (isEmptyDoc(doc) && !doc.content?.some((n) => n.type !== 'paragraph') ? '' : generateHTML(doc, noteExtensions)), [doc])
@@ -60,8 +75,8 @@ function NoteEditor({ id }: { id: string }) {
       const before = initial.current!
       const after = { ...before.content, doc: ed.getJSON() as DocNode }
       if (isEmptyDoc(after.doc)) {
-        // An empty note is not worth keeping.
-        s.exec(removeCmd([{ ...el, content: before.content }]))
+        if (s.selected[id]) discardWhenDeselected(id)
+        else s.exec(removeCmd([{ ...el, content: before.content }]))
         return
       }
       if (JSON.stringify(after.doc) !== JSON.stringify(before.doc)) {

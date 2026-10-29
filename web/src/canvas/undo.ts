@@ -47,6 +47,9 @@ export class UndoStack {
     return c
   }
 
+  /** The command Undo would revert next. */
+  get top(): Command | undefined { return this.undos[this.undos.length - 1] }
+
   get canUndo(): boolean { return this.undos.length > 0 }
   get canRedo(): boolean { return this.redos.length > 0 }
 

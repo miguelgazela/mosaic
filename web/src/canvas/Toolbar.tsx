@@ -1,8 +1,10 @@
 import { useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowUpRight, Hand, MousePointer2, Trash2, Upload } from 'lucide-react'
 import { dropFiles } from '../features/upload/dropFiles'
 import { listCards } from '../cards/registry'
-import { Tooltip, toast } from '../ui'
+import { useTrashHref } from '../features/boards/nav'
+import { Tooltip } from '../ui'
 import { addCard } from './actions'
 import { centerOfView } from './geometry'
 import { useBoard } from './store'
@@ -44,6 +46,8 @@ function RailButton({ label, tip, shortcut, pressed, ...rest }: {
 }
 
 export function Toolbar() {
+  const navigate = useNavigate()
+  const trashHref = useTrashHref()
   const tool = useBoard((s) => s.tool)
   const setTool = useBoard((s) => s.setTool)
   const lineTile = (
@@ -103,7 +107,7 @@ export function Toolbar() {
       />
       <div className="flex-1" />
       <hr className="my-1 w-8 border-[var(--divider)]" />
-      <RailButton label="Trash" icon={<Trash2 size={18} />} onClick={() => toast('Trash is coming soon')} />
+      <RailButton label="Trash" icon={<Trash2 size={18} />} onClick={() => navigate(trashHref)} />
     </nav>
   )
 }

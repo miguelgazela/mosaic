@@ -45,6 +45,11 @@ export interface BoardState {
   panning: boolean
   marquee: Rect | null
   guides: Guide[]
+  /**
+   * True while a change to elements/connections must not reach the write queue (cards leaving the board through
+   * `move_elements`: the server already has them on the other board). Use `withoutSync`.
+   */
+  syncMuted: boolean
   /** Board being shown (parent of cards created now); set by the page that owns the canvas. */
   boardId: string | null
   setBoardId(id: string | null): void
@@ -85,6 +90,8 @@ export interface BoardState {
   /** Record an already-applied command. */
   commit(c: Command): void
   undo(): void
+  /** Undo `c` if it is the next command to revert; false when later commands sit on top of it. */
+  undoIfTop(c: Command): boolean
   redo(): void
 }
 
@@ -118,6 +125,7 @@ export const useBoard = create<BoardState>()((set, get) => {
     marquee: null,
     guides: [],
     boardId: null,
+    syncMuted: false,
     editing: null,
     dropHint: null,
     canUndo: false,
@@ -241,12 +249,24 @@ export const useBoard = create<BoardState>()((set, get) => {
       history.undo()
       set(flags())
     },
+    undoIfTop(c) {
+      if (history.top !== c) return false
+      history.undo()
+      set(flags())
+      return true
+    },
     redo() {
       history.redo()
       set(flags())
     },
   }
 })
+
+/** Run store mutations that the sync layer must not write to the server (see `syncMuted`). */
+export function withoutSync(fn: () => void): void {
+  useBoard.setState({ syncMuted: true })
+  try { fn() } finally { useBoard.setState({ syncMuted: false }) }
+}
 
 export const selectedIds = (s: BoardState): string[] => Object.keys(s.selected)
 

@@ -13,7 +13,7 @@ import { getCard } from '../cards/registry'
 import { EmptyHint } from './EmptyHint'
 import { SelectionToolbar } from './SelectionToolbar'
 import { useCanvasShortcuts } from './useCanvasShortcuts'
-import { ZoomControls } from './ZoomControls'
+import { UndoControls, ZoomControls } from './ZoomControls'
 import { useFocusCard } from './focus'
 import { DropZone } from '../features/upload/DropZone'
 
@@ -121,6 +121,7 @@ export function CanvasView({ hideEmptyHint = false }: { hideEmptyHint?: boolean 
       <ConnectionPopover />
       {ghost && <GhostCard type={ghost.type} x={ghost.x} y={ghost.y} />}
       <DropZone />
+      <UndoControls />
       <ZoomControls />
       {menu && <ContextMenu menu={menu} onClose={closeMenu} />}
     </div>

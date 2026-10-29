@@ -18,7 +18,8 @@ export function Dialog({
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null
-    ref.current?.focus()
+    // Something inside may have asked for focus already (autoFocus on Cancel, a search field).
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
     const key = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', key)
     return () => { window.removeEventListener('keydown', key); prev?.focus() }

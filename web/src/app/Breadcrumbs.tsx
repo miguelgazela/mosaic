@@ -15,16 +15,20 @@ export function Breadcrumbs({
   title,
   onRename,
   readOnly,
+  renameToken = 0,
 }: {
   ancestors: Crumb[]
   title: string
   onRename: (title: string) => void
   readOnly?: boolean
+  /** Changes when something else (the board menu) asks to start renaming. */
+  renameToken?: number
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(title)
   const input = useRef<HTMLInputElement>(null)
   useEffect(() => { if (editing) input.current?.select() }, [editing])
+  useEffect(() => { if (renameToken) { setDraft(title); setEditing(true) } }, [renameToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const commit = () => {
     setEditing(false)

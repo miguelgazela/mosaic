@@ -5,12 +5,13 @@ import { LayoutDashboard, Palette, Pencil } from 'lucide-react'
 import { colorVar } from '../../canvas/colors'
 import { useBoard } from '../../canvas/store'
 import { BoardPicker } from '../../features/boards/BoardPicker'
-import { boardInfoKey, getBoardRepo, useBoardCount, useBoardInfo } from '../../features/boards/boardRepo'
+import { boardInfoKey, getBoardRepo, useBoardCount, useBoardInfo, type BoardInfo } from '../../features/boards/boardRepo'
 import { BoardIcon } from '../../features/boards/icons'
 import { useBoardHref } from '../../features/boards/nav'
 import { newId } from '../../lib/ids'
+import { queryClient } from '../../lib/queryClient'
 import { toast } from '../../ui'
-import type { CardDefinition, CardProps } from '../types'
+import type { CardDefinition, CardProps, DropTarget } from '../types'
 
 const boardIdOf = (c: Record<string, unknown>): string | undefined => (typeof c.boardId === 'string' ? c.boardId : undefined)
 
@@ -99,6 +100,17 @@ function TitleInput({ boardId, initial }: { boardId: string; initial: string }) 
   )
 }
 
+/** Dropping cards on a board card moves them into that board (`move_elements`, see moveCards.ts). */
+const dropTarget: DropTarget = {
+  accepts: (target, dragged) => !!boardIdOf(target.content) && dragged.length > 0 && dragged.every((d) => d.id !== target.id),
+  drop: () => ({}),
+  moveTo(target) {
+    const id = boardIdOf(target.content)
+    if (!id) return null
+    return { id, title: queryClient.getQueryData<BoardInfo>(boardInfoKey(id))?.title ?? 'Untitled board' }
+  },
+}
+
 export const boardCard: CardDefinition = {
   type: 'board',
   label: 'Board',
@@ -118,6 +130,22 @@ export const boardCard: CardDefinition = {
     getBoardRepo()
       .create({ id, parentId: useBoard.getState().boardId, title: 'Untitled board' })
       .catch(() => toast('Couldn’t create the board. Check your connection.'))
+  },
+  dropTarget,
+  // A copy (paste, duplicate, Alt-drag) gets its own child board: a deep copy made by `duplicate_board`.
+  onClone(clone, source) {
+    const from = boardIdOf(source.content)
+    const parent = useBoard.getState().boardId
+    if (!from || !parent) return
+    const id = newId()
+    clone.content = { ...clone.content, boardId: id }
+    getBoardRepo()
+      .duplicate({ id: from, parentId: parent, newId: id })
+      .then(() => {
+        void queryClient.invalidateQueries({ queryKey: boardInfoKey(id) })
+        void queryClient.invalidateQueries({ queryKey: ['board-count', id] })
+      })
+      .catch(() => toast('Couldn’t copy the board’s contents', { tone: 'error' }))
   },
   menuItems: (el) => {
     const id = boardIdOf(el.content)

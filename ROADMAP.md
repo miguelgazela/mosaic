@@ -17,7 +17,8 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P4 Images + files | Done (`d36bcd9`, Wave B). Storage mocked in tests; real upload not checked live |
 | P5 Links + unfurl | Done (`df1fd2c`, Wave B). `milanote-unfurl` not deployed yet — previews show the failed state until it is |
 | P7 Connections | Done (`575e61e`, merged `85a3795`, Wave B). Migration `0005_connections_client_id.sql` must be run in the SQL Editor (after 0004); not checked live |
-| P8 … P12 | Not started — each starts only when the owner says so |
+| P8 | Built, awaiting merge (migration 0006 + purge deploy pending) |
+| P9 … P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
 
@@ -186,6 +187,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 
 **Design refs:** `00-menus` (board menu), `00-pickers` (move to board), `06-trash-populated`, `06-trash-empty`, `00-shortcuts-and-confirm` (delete forever), `03-home-populated`, `00-toasts-banner-highlight` (move + undo).
 **Done when:** move/duplicate/trash on nested trees keep children + arrows consistent; frames match.
+
+**Status:** built on `claude/p8-board-mgmt-acbb4c`. **Run `0006_board_management.sql`** (functions + one trigger; without it move, duplicate and trash fail) and `0007_purge_grants.sql` (service-role grants the purge needs). Then deploy `milanote-purge` and schedule it (steps in `supabase/functions/milanote-purge/README.md`). Tested: SQL against a local PGlite copy of 0001+0004+0005+0006 (duplicate with sub-board and arrow, move with lines and column children, cycle rejection, trash/restore, trigger, delete forever); Vitest; Playwright `p8.spec.ts` on the in-memory dev database. Not tested against the real project. Choices: Recent strip is per browser (localStorage, `features/boards/recent.ts`; P10's palette can reuse it); deleting a board card trashes its child board (trigger); Trash lists boards and non-board cards. Follow-ups: other tabs on the source board keep moved cards until they re-sync; Export and Share menu items are coded but hidden (`SHOW_EXPORT` / `SHOW_SHARE` in `BoardMenu.tsx`); moved cards keep their z key (ties possible); Move to… tree has no drag and the picker has no section dividers like the mock; no "Copy link to card" item; Trash does not list individual items of a trashed board (they go with it); purge counts are not logged anywhere but the function response.
 
 ## P9 — Share links + read-only mode
 - Share dialog: create/revoke links (revoke confirm), include sub-boards toggle, copy with "Copied", empty state.
