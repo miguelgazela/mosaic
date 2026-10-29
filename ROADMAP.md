@@ -208,6 +208,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - ⌘K palette: recent boards when empty, grouped results (Boards, Cards) with highlighted match + path, keyboard selection, searching, no results.
 - Jump to result: open board, pan/zoom to card, highlight flash.
 
+**Status:** built on `claude/p10-search-1459ae`, not merged. **Run `0008_search.sql`** (one function `milanote.search`; without it the palette shows "Search isn't available"). Tested: SQL on a local PGlite copy of 0001+0008 (prefix, multi-word, trashed board/card skipped, markers); Vitest (`features/search/parse.test.ts`); Playwright `p10.spec.ts` on the in-memory dev db (`DevDb.search` stand-in). Not tested against the real project. Jump reuses P6's `?card=` focus + flash (`canvas/focus.ts`). Mounts outside P10's folder: `app/TopBar.tsx` (palette, ⌘K/Ctrl+K, button), `boardRepo.search`, `devDb.search`; image `toPlainText` now holds caption and file name. Follow-ups: ⌘K only works on pages with the top bar (not Home-less pages like Tasks/Trash); search covers live boards only (no trashed items); no ranking by recency; `plain_text` of cards saved before this phase is unchanged (image caption-only cards lack the file name until edited); highlight is the whole word (ts_headline), mock shows the same.
+
 **Design refs:** `00-search-palette`, `00-toasts-banner-highlight` (highlight flash).
 **Done when:** finds text inside notes, to-do items, link titles, captions, file names across all boards; frames match.
 

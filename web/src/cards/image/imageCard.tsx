@@ -211,7 +211,7 @@ export const imageCard: CardDefinition = {
   },
   toPlainText: (el) => {
     const c = readImage(el.content)
-    return c.caption || c.name
+    return [c.caption, c.name].filter(Boolean).join(' ')
   },
   toMarkdown: (el) => {
     const c = readImage(el.content)
