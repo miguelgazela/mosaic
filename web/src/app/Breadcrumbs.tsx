@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, MoreHorizontal } from 'lucide-react'
 import { MenuItem, MenuPanel, IconButton } from '../ui'
 import { Popover } from '../ui/Popover'
+import { BoardTile } from '../features/boards/icons'
 
 export interface Crumb { id: string; title: string; to: string }
 
@@ -16,6 +17,8 @@ export function Breadcrumbs({
   onRename,
   readOnly,
   renameToken = 0,
+  icon,
+  color,
 }: {
   ancestors: Crumb[]
   title: string
@@ -23,6 +26,9 @@ export function Breadcrumbs({
   readOnly?: boolean
   /** Changes when something else (the board menu) asks to start renaming. */
   renameToken?: number
+  /** Icon and colour of the current board, shown as a 20 px chip before its title. */
+  icon?: string | null
+  color?: string | null
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(title)
@@ -70,6 +76,7 @@ export function Breadcrumbs({
           )}
         </span>
       ))}
+      {icon !== undefined && <BoardTile icon={icon} color={color} size={20} glyph={12} radius="6px" />}
       {editing ? (
         <input
           ref={input}

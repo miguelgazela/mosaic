@@ -20,6 +20,8 @@
   --primary-pressed: #5b21b6;
   --primary-soft: #ede9fe;              /* drop targets, active tool, selected rows */
   --primary-ink: #4c1d95;               /* text on --primary-soft */
+  --board-icon: #5B21B6;                /* board icon glyph */
+  --board-tile: #ECEAE6;                /* board icon tile (no custom colour) */
   --marquee-fill: rgb(124 58 237 / 0.10);
 
   /* ── Accent (teal) ─────────────────────────────────── */

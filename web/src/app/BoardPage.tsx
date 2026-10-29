@@ -137,7 +137,7 @@ export function BoardPage() {
         email={session?.user.email ?? ''}
         onSignOut={signOut}
         readOnly={phone}
-        board={data ? { id: data.board.id, parentId: data.board.is_home ? null : data.board.parent_board_id } : undefined}
+        board={data ? { id: data.board.id, parentId: data.board.is_home ? null : data.board.parent_board_id, icon: data.board.is_home ? undefined : data.board.icon, color: data.board.color } : undefined}
       />
       <OfflineBanner online={online} />
       {phone && (

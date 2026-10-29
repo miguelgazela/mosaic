@@ -3,14 +3,13 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Link2Off } from 'lucide-react'
 import { CanvasView } from '../../canvas/CanvasView'
-import { colorVar } from '../../canvas/colors'
 import { useBoard } from '../../canvas/store'
 import { signedUrls } from '../../lib/storage/client'
 import { fromConnRow, fromRow } from '../../lib/sync/rows'
 import { LogoMark } from '../../ui'
 import { FullPageMessage } from '../../ui/FullPageMessage'
 import { boardInfoKey, setBoardRepo, type BoardRepo } from '../boards/boardRepo'
-import { BoardIcon } from '../boards/icons'
+import { BoardTile } from '../boards/icons'
 import { BoardHrefContext } from '../boards/nav'
 import { fetchShared, ShareGone, type SharePayload } from './viewerApi'
 
@@ -35,11 +34,7 @@ function MadeWith() {
 const bar = 'flex shrink-0 items-center gap-3 border-b border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-4'
 
 function Tile({ b }: { b: { icon: string | null; color: string | null } }) {
-  return (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-chip)]" style={{ background: colorVar(b.color) ?? 'var(--card-color-9)', color: 'var(--text-secondary)' }}>
-      <BoardIcon icon={b.icon} size={14} />
-    </span>
-  )
+  return <BoardTile icon={b.icon} color={b.color} size={24} glyph={14} radius="var(--radius-chip)" />
 }
 
 /** Top bar of the shared view (07-shared-board-*): no account, no tools. */

@@ -21,7 +21,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P9 Share links + read-only | Done (merged `741e501`). 0009 applied, `milanote-share` deployed 2026-10-29; live-checked 2026-10-29 |
 | P10 Search | Done (merged `0a566f8`). Migration 0008 applied; owner tried it on the dev db |
 | P11 Export | Done (merged `b7efa70`). No migration. Not checked live |
-| D2 Mosaic branding + icons | Not started — runs after P11 merges, before P12. Mockups already updated (name, app icon, board icon set) |
+| D2 Mosaic branding + icons | Built on branch `claude/d2-branding-cecd0f`, not merged. |
 | P12 | Not started — each starts only when the owner says so |
 
 ### Open follow-ups
@@ -243,6 +243,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - **Where the board icon appears:** board cards (`cards/board/boardCard.tsx`, 64 px tile), breadcrumb chip (20 px), Move-to tree, Trash rows, search results, icon picker. A custom board colour still replaces the grey tile (e.g. the orange "Hero film" card in `00-card-board-and-swatch`).
 - Re-export the changed frames to `design/screens/` (owner exports from the mockups; filenames unchanged) and update `design/README.md`.
 - Update Playwright selectors/snapshots that depend on the old logo or icon set; add one test that a board with a legacy icon key still renders.
+
+**Status:** built on `claude/d2-branding-cecd0f`, awaiting merge. No migration. Icon exports via `design/brand/export-icons.mjs`; `BoardTile`/`BoardIcon` in `features/boards/icons.tsx`; legacy keys tested in `icons.test.tsx`; Playwright `d2.spec.ts`.
 
 **Design refs:** `00-foundations` (Logo, Lockup and clear space, Board icons), `00-pickers` (board icon picker), `00-card-board-and-swatch`, `01-sign-in-default`, `01-sign-in-phone`, `02-not-a-member-default`, `03-home-populated`, `04-board-populated`, `07-shared-board-default`, `09-not-found-default`.
 **Done when:** those frames match the running app (screenshots compared at 1440 × 900); an existing board with an old icon key still renders; no "Milanote" in visible UI; lint, tests, build pass.
