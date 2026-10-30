@@ -24,7 +24,7 @@ function useClickGuard() {
 function Favicon({ src, domain }: { src?: string; domain: string }) {
   const [bad, setBad] = useState(false)
   if (!src || bad) {
-    return <span aria-hidden className="grid h-[14px] w-[14px] shrink-0 place-items-center rounded-[3px] bg-[var(--border)] text-[9px] font-bold uppercase text-[var(--text-secondary)]">{domain[0]}</span>
+    return <span aria-hidden className="grid h-4 w-4 shrink-0 place-items-center rounded-[3px] bg-[var(--border)] text-[12px] leading-none font-bold uppercase text-[var(--text-secondary)]">{domain[0]}</span>
   }
   return <img src={src} alt="" width={14} height={14} onError={() => setBad(true)} className="h-[14px] w-[14px] shrink-0 rounded-[3px]" />
 }

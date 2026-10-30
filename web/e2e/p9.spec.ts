@@ -15,7 +15,7 @@ test('share dialog: empty state, create copies the link, revoke asks first', asy
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByTestId('share-empty')).toBeVisible()
 
-  await dialog.getByRole('switch').click()
+  await expect(dialog.getByRole('switch')).toBeChecked() // matches the DB default (include sub-boards)
   await dialog.getByRole('button', { name: 'Create link' }).click()
   await expect(dialog.getByTestId('share-link')).toHaveCount(1)
   await expect(dialog.getByText('Copied')).toBeVisible()
