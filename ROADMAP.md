@@ -24,7 +24,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | D2 Mosaic branding + icons | Done (merged `c3d8686`). Browser keys, clipboard kind and IndexedDB renamed to `mosaic*` (owner had no data). Two icon gaps open, see follow-ups |
 | P12 Polish, phone, performance, PWA | Done (merged `eb22b64`). No migration. Needs deploy (service worker + manifest ship with the web build) |
 | P13 Leftovers | Done (merged `a390186`, live 2026-10-30). 0010 applied, `milanote-unfurl` redeployed |
-| P14 Owner bugs | Built on branch, awaiting merge |
+| P14 Owner bugs | Done (merged, live 2026-10-30). No migration |
 
 ### Open follow-ups
 
