@@ -49,6 +49,7 @@ test.describe('shortcuts sheet and account menu', () => {
 
     await page.getByRole('button', { name: 'Account' }).click()
     await expect(page.getByRole('menuitem', { name: /Trash/ })).toBeVisible()
+    await expect(page.getByTestId('app-version')).toHaveText(/^Version \S+/)
     await page.getByRole('menuitem', { name: /Keyboard shortcuts/ }).click()
     await expect(sheet).toBeVisible()
   })

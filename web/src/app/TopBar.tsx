@@ -4,6 +4,7 @@ import { usePhone } from '../lib/usePhone'
 import { ChevronLeft, CheckCircle2, Keyboard, LogOut, Search, Trash2 } from 'lucide-react'
 import { Button, LogoMark, MenuDivider, MenuItem, MenuPanel } from '../ui'
 import { useDisplayName } from '../auth/useDisplayName'
+import { versionLabel } from '../lib/version'
 import { openShortcuts } from '../features/shortcuts/store'
 import { Popover } from '../ui/Popover'
 import { BoardMenu } from '../features/boards/BoardMenu'
@@ -48,6 +49,8 @@ function AccountMenu({ email, onSignOut, size = 32 }: { email: string; onSignOut
         <MenuItem icon={<Keyboard size={15} />} shortcut="?" onClick={() => { close(); openShortcuts() }}>Keyboard shortcuts</MenuItem>
         <MenuDivider />
         <MenuItem icon={<LogOut size={15} />} onClick={onSignOut}>Sign out</MenuItem>
+        <MenuDivider />
+        <p data-testid="app-version" className="select-text px-2.5 pb-1 pt-0.5 text-[length:var(--text-caption)] text-[var(--text-muted)]">Version {versionLabel()}</p>
       </MenuPanel>
     )}
   </Popover>
