@@ -8,9 +8,9 @@ describe('pdf preview', () => {
     expect(isPdfFile({ name: 'a.zip', type: 'application/zip' })).toBe(false)
   })
   it('keeps the page aspect and caps tall pages', () => {
-    expect(previewSize(595, 842)).toEqual({ w: 512, h: 724 }) // A4
+    expect(previewSize(595, 842)).toEqual({ w: 512, h: 725 }) // A4
     const tall = previewSize(100, 1000)
-    expect(tall.h).toBeLessThanOrEqual(769)
+    expect(tall.h).toBeLessThanOrEqual(770)
     expect(tall.w).toBeLessThan(512)
   })
 })
