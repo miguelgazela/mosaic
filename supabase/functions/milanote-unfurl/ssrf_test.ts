@@ -118,3 +118,21 @@ Deno.test('pinnedFetch connects to the given IP whatever the hostname says (plai
     await srv.shutdown()
   }
 })
+
+Deno.test('a refused pinned request falls back to plain fetch; fallback can be disabled', async () => {
+  const fetchImpl = (() => Promise.resolve(new Response('blocked', { status: 403 }))) as unknown as NonNullable<Parameters<typeof safeFetchText>[1]>['fetchImpl']
+  let fellBack = 0
+  const fallbackImpl = (() => { fellBack++; return Promise.resolve(new Response('<title>ok</title>', { headers: { 'content-type': 'text/html' } })) }) as unknown as NonNullable<Parameters<typeof safeFetchText>[1]>['fallbackImpl']
+  const r = await safeFetchText('https://example.com/', { resolve: pub, fetchImpl, fallbackImpl })
+  assertEquals(r.body, '<title>ok</title>')
+  assertEquals(fellBack, 1)
+  await assertRejects(() => safeFetchText('https://example.com/', { resolve: pub, fetchImpl, fallbackImpl: null }), UnfurlError)
+})
+
+Deno.test('fallback re-checks the host: a name now resolving private is blocked', async () => {
+  let calls = 0
+  const resolve = () => Promise.resolve(++calls === 1 ? ['93.184.216.34'] : ['10.0.0.1'])
+  const fetchImpl = (() => Promise.resolve(new Response('', { status: 403 }))) as unknown as NonNullable<Parameters<typeof safeFetchText>[1]>['fetchImpl']
+  const fallbackImpl = (() => Promise.resolve(new Response('leak'))) as unknown as NonNullable<Parameters<typeof safeFetchText>[1]>['fallbackImpl']
+  await assertRejects(() => safeFetchText('https://example.com/', { resolve, fetchImpl, fallbackImpl }), UnfurlError)
+})

@@ -41,6 +41,28 @@ const resolveUrl = (v: string | undefined, base: URL): string | undefined => {
   } catch { return undefined }
 }
 
+/** First `image` in the page's JSON-LD (schema.org), e.g. shops that put the product photo there instead of og:image. */
+export function jsonLdImage(html: string): string | undefined {
+  const pick = (v: unknown): string | undefined => {
+    if (typeof v === 'string') return v
+    if (Array.isArray(v)) { for (const x of v) { const r = pick(x); if (r) return r } return undefined }
+    if (v && typeof v === 'object') { const o = v as Record<string, unknown>; return pick(o.url ?? o.contentUrl) }
+    return undefined
+  }
+  const walk = (o: unknown, depth: number): string | undefined => {
+    if (depth > 6 || !o || typeof o !== 'object') return undefined
+    if (Array.isArray(o)) { for (const x of o) { const r = walk(x, depth + 1); if (r) return r } return undefined }
+    const rec = o as Record<string, unknown>
+    if ('image' in rec) { const r = pick(rec.image); if (r) return r }
+    for (const v of Object.values(rec)) { const r = walk(v, depth + 1); if (r) return r }
+    return undefined
+  }
+  for (const m of html.matchAll(/<script\b[^>]*type=["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { const r = walk(JSON.parse(m[1]), 0); if (r) return r } catch { /* bad JSON-LD: skip */ }
+  }
+  return undefined
+}
+
 export function parseHtml(html: string, base: URL): Unfurl {
   const head = html.slice(0, html.search(/<\/head>/i) > 0 ? html.search(/<\/head>/i) : undefined)
   const meta: Record<string, string> = {}
@@ -57,7 +79,7 @@ export function parseHtml(html: string, base: URL): Unfurl {
   return {
     title: clean(meta['og:title'] ?? meta['twitter:title'] ?? (titleTag ? decodeEntities(titleTag) : undefined), 300),
     description: clean(meta['og:description'] ?? meta['twitter:description'] ?? meta['description'], 600),
-    image: resolveUrl(meta['og:image'] ?? meta['og:image:url'] ?? meta['twitter:image'] ?? meta['twitter:image:src'], base),
+    image: resolveUrl(meta['og:image'] ?? meta['og:image:url'] ?? meta['twitter:image'] ?? meta['twitter:image:src'] ?? jsonLdImage(html), base),
     favicon: resolveUrl(icon?.href ?? '/favicon.ico', base),
   }
 }

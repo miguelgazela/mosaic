@@ -125,7 +125,19 @@ export interface FetchOpts {
   /** Gets `url` from the validated address `ip` (default: pinnedFetch). Tests inject a fake. */
   fetchImpl?: (url: URL, init: { ip: string; signal: AbortSignal; headers?: HeadersInit }) => Promise<Response>
   headers?: HeadersInit
+  /**
+   * Used when the pinned request is refused (403/429/503). Some bot filters (Cloudflare) reject the
+   * raw TLS client used by pinnedFetch but accept Deno's fetch. The host is re-checked right before,
+   * redirects stay manual so every hop is still guarded. Residual risk: a DNS change in the few ms
+   * between the check and fetch's own lookup. Pass null to disable.
+   */
+  fallbackImpl?: ((url: URL, init: { signal: AbortSignal; headers?: HeadersInit }) => Promise<Response>) | null
 }
+
+export const plainFetch = (url: URL, { signal, headers }: { signal: AbortSignal; headers?: HeadersInit }) =>
+  fetch(url, { signal, headers, redirect: 'manual' })
+
+const REFUSED = new Set([403, 429, 503])
 
 /**
  * GET with the guard applied to the first URL and to every redirect target.
@@ -134,7 +146,7 @@ export interface FetchOpts {
  */
 export async function safeFetchText(
   url: string,
-  { timeoutMs = 5000, maxBytes = 1_000_000, maxRedirects = 5, resolve = denoResolver, fetchImpl = pinnedFetch, headers }: FetchOpts = {},
+  { timeoutMs = 5000, maxBytes = 1_000_000, maxRedirects = 5, resolve = denoResolver, fetchImpl = pinnedFetch, headers, fallbackImpl = plainFetch }: FetchOpts = {},
 ): Promise<{ finalUrl: URL; body: string; contentType: string; truncated: boolean }> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
@@ -144,7 +156,13 @@ export async function safeFetchText(
       let res: Response
       try {
         res = await fetchImpl(current, { ip, signal: ctrl.signal, headers })
+        if (REFUSED.has(res.status) && fallbackImpl) {
+          await res.body?.cancel()
+          ;({ url: current, ip } = await resolvePublicUrl(current, resolve))
+          res = await fallbackImpl(current, { signal: ctrl.signal, headers })
+        }
       } catch (e) {
+        if (e instanceof UnfurlError) throw e
         if (ctrl.signal.aborted) throw new UnfurlError('timeout')
         throw new UnfurlError('upstream', String(e))
       }

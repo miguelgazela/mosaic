@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1'
-import { detectVideo, merge, parseHtml, parseOembed } from './parse.ts'
+import { detectVideo, jsonLdImage, merge, parseHtml, parseOembed } from './parse.ts'
 
 const base = new URL('https://example.com/post/1')
 
@@ -44,4 +44,20 @@ Deno.test('oembed mapping + merge keeps oembed values', () => {
   assertEquals(o.embed, v)
   const m = merge(o, { title: 'Page title', description: 'D' })
   assertEquals([m.title, m.description], ['Vid', 'D'])
+})
+
+Deno.test('image falls back to JSON-LD when there is no og:image (e.g. shop product pages)', () => {
+  const html = `<html><head><title>Shorts</title></head><body>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"ProductGroup","name":"x"},{"@type":"Product","image":"https://cdn.example.com/p/1.jpg"}]}</script>
+  </body></html>`
+  const r = parseHtml(html, new URL('https://shop.example.com/p/1'))
+  assertEquals(r.title, 'Shorts')
+  assertEquals(r.image, 'https://cdn.example.com/p/1.jpg')
+})
+
+Deno.test('JSON-LD image: arrays, ImageObject, bad JSON skipped; og:image still wins', () => {
+  assertEquals(jsonLdImage('<script type="application/ld+json">{bad</script><script type="application/ld+json">{"image":[{"@type":"ImageObject","url":"/a.jpg"}]}</script>'), '/a.jpg')
+  assertEquals(jsonLdImage('<p>none</p>'), undefined)
+  const html = '<head><meta property="og:image" content="https://x.com/og.jpg"></head><script type="application/ld+json">{"image":"https://x.com/ld.jpg"}</script>'
+  assertEquals(parseHtml(html, new URL('https://x.com/')).image, 'https://x.com/og.jpg')
 })
