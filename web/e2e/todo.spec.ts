@@ -23,11 +23,8 @@ test.describe('to-do card', () => {
 
   test('T adds a card; add, check, date, hide completed, undo', async ({ page }) => {
     const card = page.getByTestId('todo-card')
-    // The key can land before the shortcut listener is attached (seen once in a loaded full run): retry until the card exists.
-    await expect(async () => {
-      if ((await card.count()) === 0) await page.keyboard.press('t')
-      await expect(card).toBeVisible({ timeout: 500 })
-    }).toPass({ timeout: 10_000 })
+    await page.keyboard.press('t')
+    await expect(card).toBeVisible()
     await card.getByRole('button', { name: 'Add an item…' }).click()
     await expect(card.getByLabel('To-do item')).toBeFocused()
     await page.keyboard.type('Book the studio')
@@ -101,6 +98,12 @@ async function mockTasks(page: Page, rows: unknown[]) {
   const done: unknown[] = []
   // Stateful like the server: set_task_done changes what the next tasks() returns.
   await page.route('**/rest/v1/rpc/tasks*', (r) => r.fulfill({ json: rows }))
+  await page.route('**/rest/v1/rpc/set_task_due*', (r) => {
+    const b = r.request().postDataJSON() as { p_item: string; p_due: string | null }
+    done.push(b)
+    for (const row of rows as { item_id: string; due: string | null }[]) if (row.item_id === b.p_item) row.due = b.p_due
+    return r.fulfill({ status: 204 })
+  })
   await page.route('**/rest/v1/rpc/set_task_done*', (r) => {
     const b = r.request().postDataJSON() as { p_item: string; p_done: boolean }
     done.push(b)
@@ -130,6 +133,17 @@ test.describe('tasks page', () => {
     await expect(page.getByTestId('group-overdue')).toHaveCount(0)
     await page.getByRole('switch', { name: 'Show completed' }).click()
     await expect(page.getByText('Already done')).toBeVisible()
+  })
+
+  test('Add date sets a due date and moves the item to its group', async ({ page }) => {
+    const calls = await mockTasks(page, [task({ item_id: 'd', item_text: 'Review brand fonts' })])
+    await page.goto('/dev/tasks')
+    await expect(page.getByTestId('group-none')).toBeVisible()
+    const target = day(5)
+    await page.getByLabel('Add due date for "Review brand fonts"').fill(target)
+    await expect.poll(() => calls).toEqual([{ p_element: 'e1', p_item: 'd', p_due: target }])
+    await expect(page.getByTestId('group-upcoming')).toContainText('Review brand fonts')
+    await expect(page.getByTestId('group-none')).toHaveCount(0)
   })
 
   test('row links to the card on its board', async ({ page }) => {

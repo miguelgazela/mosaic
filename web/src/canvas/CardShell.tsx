@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, type CSSProperties } from 'react'
 import { getCard } from '../cards/registry'
 import { EdgeHandles } from './EdgeHandles'
 import { startCardDrag, startResize } from './interactions'
-import { useBoard } from './store'
+import { LOW_ZOOM, useBoard } from './store'
 
 const handleBase: CSSProperties = {
   position: 'absolute',
@@ -20,6 +20,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
   const rank = useBoard((s) => s.rank[id])
   const lifted = useBoard((s) => s.dragging && !!s.selected[id])
   const readOnly = useBoard((s) => s.readOnly)
+  const lowZoom = useBoard((s) => s.viewport.zoom < LOW_ZOOM)
   const single = useBoard((s) => s.selected[id] === true && Object.keys(s.selected).length === 1)
   const ref = useRef<HTMLDivElement>(null)
   const def = el ? getCard(el.type) : undefined
@@ -49,6 +50,8 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
       data-w={el.width}
       data-h={el.height ?? ''}
       data-selected={selected}
+      data-readonly={readOnly || undefined}
+      data-lod={lowZoom && !def?.keepTextAtLowZoom ? 'low' : undefined}
       data-parent={el.parentId ?? undefined}
       style={{
         ...(inColumn
@@ -62,7 +65,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
               height: el.height ?? undefined,
               zIndex: lifted ? 1_000_000 : rank,
             }),
-        outline: selected ? 'calc(2px / var(--zoom)) solid var(--primary)' : undefined,
+        outline: selected && !def?.ownSelectionRing ? 'calc(2px / var(--zoom)) solid var(--primary)' : undefined,
         borderRadius: 'var(--radius-card)',
       }}
       onPointerDown={(e) => {

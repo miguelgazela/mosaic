@@ -1,0 +1,133 @@
+import { expect, test } from '@playwright/test'
+
+type Board = { getState(): { setViewport(v: { x: number; y: number; zoom: number }): void } }
+const setZoom = (page: import('@playwright/test').Page, zoom: number) =>
+  page.evaluate((z) => (window as unknown as { __board: Board }).__board.getState().setViewport({ x: 120, y: 80, zoom: z }), zoom)
+
+test('25 % zoom: card text becomes bars, layout is unchanged, text returns at 100 %', async ({ page }) => {
+  await page.goto('/dev/board/p13lod')
+  await page.getByRole('button', { name: 'Dismiss' }).click({ timeout: 1500 }).catch(() => {})
+  await page.keyboard.press('n')
+  await expect(page.getByRole('textbox', { name: 'Note text' })).toBeFocused()
+  await page.keyboard.type('Pick the locations')
+  await page.keyboard.press('Escape')
+  await page.getByTestId('canvas').click({ position: { x: 900, y: 600 } })
+  await page.keyboard.press('t')
+  await expect(page.getByTestId('todo-card')).toBeVisible()
+  await page.getByTestId('canvas').click({ position: { x: 900, y: 600 } })
+  await expect(page.locator('[data-card-id]')).toHaveCount(2)
+  const note = page.locator('[data-card-id]').filter({ has: page.locator('.note-prose p') }).first()
+  await setZoom(page, 1)
+  const h1 = await note.evaluate((el) => (el as HTMLElement).offsetHeight)
+
+  await setZoom(page, 0.25)
+  await expect(note).toHaveAttribute('data-lod', 'low')
+  expect(await note.locator('.note-prose p').first().evaluate((el) => getComputedStyle(el).color)).toBe('rgba(0, 0, 0, 0)')
+  expect(await note.locator('.note-prose p').first().evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient')
+  expect(await note.evaluate((el) => (el as HTMLElement).offsetHeight)).toBe(h1)
+  await page.screenshot({ path: 'test-results/p13-zoom-25.png' })
+
+  await setZoom(page, 1)
+  await expect(note).not.toHaveAttribute('data-lod', 'low')
+})
+
+test('swatch edit panel: hex validation, name, Esc commits, reopening shows the values', async ({ page }) => {
+  await page.goto('/dev/board/p13swatch')
+  await page.getByRole('button', { name: 'Add colour' }).click()
+  const panel = page.getByRole('dialog', { name: 'Edit colour' })
+  await expect(panel).toBeVisible()
+  const hex = panel.getByRole('textbox', { name: 'Hex' })
+  await hex.fill('#12')
+  await expect(hex).toHaveAttribute('aria-invalid', 'true')
+  await hex.fill('#3e5c50')
+  await expect(hex).toHaveAttribute('aria-invalid', 'false')
+  await panel.getByRole('textbox', { name: 'Name' }).fill('Pine')
+  await page.keyboard.press('Escape')
+  await expect(panel).toHaveCount(0)
+  const swatch = page.getByTestId('swatch-card')
+  await expect(swatch).toContainText('Pine')
+  await expect(swatch).toContainText('#3E5C50')
+
+  await swatch.dblclick()
+  await expect(panel).toBeVisible()
+  await expect(panel.getByRole('textbox', { name: 'Hex' })).toHaveValue('#3E5C50')
+  await expect(panel.getByRole('textbox', { name: 'Name' })).toHaveValue('Pine')
+  await panel.getByRole('textbox', { name: 'Name' }).fill('')
+  await panel.getByRole('button', { name: 'Done' }).click()
+  await expect(swatch).toContainText('No name')
+
+  await page.keyboard.press('Control+z')
+  await expect(swatch).toContainText('Pine')
+})
+
+test('board "Icon & colour" menu: colour, icon and reopening shows the current choice', async ({ page }) => {
+  await page.goto('/dev/board/p13board')
+  await expect(page.getByTestId('canvas')).toBeVisible()
+  await page.keyboard.press('b')
+  await page.getByRole('textbox', { name: 'Board name' }).fill('Hero film')
+  await page.keyboard.press('Enter')
+  const card = page.getByTestId('board-card')
+  await card.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Icon & colour' }).click()
+  const colours = page.getByRole('group', { name: 'Board colour' })
+  await expect(colours.getByRole('button', { name: 'No colour' })).toHaveAttribute('aria-pressed', 'true')
+  const before = await card.evaluate((el) => getComputedStyle(el).backgroundColor)
+  await colours.getByRole('button', { name: /^Colour / }).first().click()
+  await expect(colours.getByRole('button', { name: /^Colour / }).first()).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(() => card.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(before)
+  await page.getByRole('button', { name: /^Rocket$/ }).click()
+
+  await page.keyboard.press('Escape')
+  await card.click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Icon & colour' }).click()
+  await expect(page.getByRole('group', { name: 'Board colour' }).getByRole('button', { name: 'No colour' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByRole('button', { name: /^Rocket$/ })).toHaveAttribute('aria-pressed', 'true')
+  await colours.getByRole('button', { name: 'No colour' }).click()
+  await expect(colours.getByRole('button', { name: 'No colour' })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('Home hint: the Board button is highlighted and an arrow points at it', async ({ page }) => {
+  await page.goto('/dev/board/home?home=1')
+  await expect(page.getByTestId('home-onboarding')).toBeVisible()
+  const ring = (await page.getByTestId('home-hint-ring').boundingBox())!
+  const btn = (await page.getByRole('button', { name: 'Add board' }).boundingBox())!
+  expect(Math.abs(ring.x + ring.width / 2 - (btn.x + btn.width / 2))).toBeLessThan(2)
+  expect(Math.abs(ring.y + ring.height / 2 - (btn.y + btn.height / 2))).toBeLessThan(2)
+  const arrow = (await page.getByTestId('home-hint-arrow').boundingBox())!
+  expect(arrow.x).toBeGreaterThan(btn.x + btn.width)
+  await page.getByRole('button', { name: 'Dismiss' }).click()
+  await expect(page.getByTestId('home-hint-ring')).toHaveCount(0)
+})
+
+test('note checkboxes tick without entering edit mode, and undo', async ({ page }) => {
+  await page.goto('/dev/board/p13check')
+  await expect(page.getByTestId('canvas')).toBeVisible()
+  await page.keyboard.press('n')
+  const editor = page.getByRole('textbox', { name: 'Note text' })
+  await expect(editor).toBeFocused()
+  await page.keyboard.type('[ ] Call the studio')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Order props')
+  await page.keyboard.press('Escape')
+  await expect(editor).toHaveCount(0)
+  const boxes = page.getByTestId('note-card').getByRole('checkbox')
+  await expect(boxes).toHaveCount(2)
+  await boxes.first().click()
+  await expect(boxes.first()).toBeChecked()
+  await expect(boxes.nth(1)).not.toBeChecked()
+  await expect(editor).toHaveCount(0) // still not editing
+  await page.keyboard.press('Control+z')
+  await expect(boxes.first()).not.toBeChecked()
+})
+
+test('viewer: checkboxes and swatches do not look clickable', async ({ page }) => {
+  await page.goto('/s/demo')
+  const card = page.locator('[data-card-id][data-readonly]').first()
+  await expect(card).toBeVisible()
+  const todo = page.getByTestId('todo-card').getByRole('checkbox').first()
+  await expect(todo).toBeVisible()
+  expect(await todo.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none')
+  expect(await todo.evaluate((el) => getComputedStyle(el).cursor)).toBe('default')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: '+ Add item' })).toHaveCount(0)
+})

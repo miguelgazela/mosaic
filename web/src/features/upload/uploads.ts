@@ -5,7 +5,8 @@ import { useBoard } from '../../canvas/store'
 import { toast } from '../../ui'
 import { currentUid, putObject } from '../../lib/storage/client'
 import { cardSizeFor, isImageFile } from '../../lib/storage/imagePlan'
-import { MAX_FILE_BYTES, extForMime, extOf, formatBytes, originalPath, thumbPath } from '../../lib/storage/paths'
+import { MAX_FILE_BYTES, extForMime, extOf, formatBytes, originalPath, previewPath, thumbPath } from '../../lib/storage/paths'
+import { isPdfFile, renderPdfPreview } from '../../lib/storage/pdfPreview'
 import { prepareImage } from '../../lib/storage/processImage'
 
 /** Per-card upload state. Lives only in this tab; a card with no `path` and no state here is an unfinished upload. */
@@ -111,9 +112,20 @@ async function runFile(id: string, file: File): Promise<void> {
     await putObject(path, file, (l) => setState(id, { loaded: l, progress: l / file.size }))
     mergeContent(id, { path })
     setState(id, null)
+    if (isPdfFile(file)) void uploadPdfPreview(id, uid, file)
   } catch (e) {
     fail(id, file.name, e instanceof Error && e.message === 'Network error' ? 'The connection dropped.' : 'Upload failed.', true)
   }
+}
+
+/** Best effort: a PDF without a preview still works as a plain file card. */
+async function uploadPdfPreview(id: string, uid: string, file: File): Promise<void> {
+  try {
+    const pv = await renderPdfPreview(file)
+    const path = previewPath(uid, id)
+    await putObject(path, pv.blob, () => {})
+    mergeContent(id, { previewPath: path, pages: pv.pages, pw: pv.w, ph: pv.h })
+  } catch { /* leave the card as it is */ }
 }
 
 function start(id: string): void {

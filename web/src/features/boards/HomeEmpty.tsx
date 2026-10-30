@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { colorVar } from '../../canvas/colors'
 import { addCard } from '../../canvas/actions'
@@ -47,6 +47,34 @@ function RecentStrip() {
   )
 }
 
+/** Violet ring around the rail's Board button plus an arrow pointing at it (03-home-empty). Fixed, so it needs no layout of its own. */
+function BoardButtonHint() {
+  const [r, setR] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const b = document.querySelector('nav[aria-label="Tools"] button[aria-label="Add board"]')?.getBoundingClientRect()
+      setR(b ? { x: b.left, y: b.top, w: b.width, h: b.height } : null)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+  if (!r) return null
+  return (
+    <>
+      <span
+        data-testid="home-hint-ring"
+        aria-hidden
+        className="pointer-events-none fixed z-[5] rounded-[var(--radius-menu)] border-2 border-[var(--primary)] bg-[var(--primary-soft)]/50"
+        style={{ left: r.x - 3, top: r.y - 3, width: r.w + 6, height: r.h + 6, boxShadow: '0 0 0 3px var(--primary-soft)' }}
+      />
+      <svg data-testid="home-hint-arrow" aria-hidden className="pointer-events-none fixed z-[5] text-[var(--primary-ink)]" width="44" height="16" viewBox="0 0 44 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ left: r.x + r.w + 12, top: r.y + r.h / 2 - 8 }}>
+        <path d="M42 8H3M9 2L3 8l6 6" />
+      </svg>
+    </>
+  )
+}
+
 /** Home's overlay: the Recent strip, plus the onboarding card while the board has nothing on it. */
 export function HomeEmpty() {
   const empty = useBoard((s) => Object.keys(s.elements).length === 0)
@@ -55,6 +83,7 @@ export function HomeEmpty() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10" style={{ left: readOnly ? 0 : 'var(--rail-w)' }}>
       <RecentStrip />
+      {empty && !dismissed && !readOnly && <BoardButtonHint />}
       {empty && !dismissed && (
         <section
           data-testid="home-onboarding"

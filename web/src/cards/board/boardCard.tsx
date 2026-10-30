@@ -47,7 +47,7 @@ function BoardCard({ element: el }: CardProps) {
     >
       <BoardTile icon={info?.icon ?? null} color={info?.color} size={64} glyph={28} onCard />
       {editing && boardId ? <TitleInput boardId={boardId} initial={title} /> : (
-        <div className="w-full truncate text-[length:var(--text-card)] font-semibold leading-[var(--leading-card)]">{title}</div>
+        <div data-lod-bar="dark" className="w-full truncate text-[length:var(--text-card)] font-semibold leading-[var(--leading-card)]">{title}</div>
       )}
       <div className="-mt-1.5 text-[length:var(--text-caption)] leading-[var(--leading-caption)] text-[var(--text-muted)]">
         {dropActive ? <span className="font-semibold text-[var(--primary)]">Drop to move here</span> : sub}

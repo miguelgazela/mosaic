@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { docToMarkdown, docToText, emptyDoc, isEmptyDoc, textToDoc, type DocNode } from './noteDoc'
+import { toggleTaskItem, docToMarkdown, docToText, emptyDoc, isEmptyDoc, textToDoc, type DocNode } from './noteDoc'
 
 const p = (...content: DocNode[]): DocNode => ({ type: 'paragraph', content })
 const t = (text: string, marks?: DocNode['marks']): DocNode => ({ type: 'text', text, marks })
@@ -43,5 +43,31 @@ describe('noteDoc', () => {
   it('knows when a note is empty', () => {
     expect(isEmptyDoc(emptyDoc())).toBe(true)
     expect(isEmptyDoc(textToDoc('x'))).toBe(false)
+  })
+})
+
+describe('toggleTaskItem', () => {
+  const item = (text: string, checked: boolean, kids: DocNode[] = []): DocNode => ({
+    type: 'taskItem', attrs: { checked }, content: [{ type: 'paragraph', content: [{ type: 'text', text }] }, ...kids],
+  })
+  const doc: DocNode = {
+    type: 'doc',
+    content: [{ type: 'taskList', content: [item('a', false, [{ type: 'taskList', content: [item('a1', false)] }]), item('b', true)] }],
+  }
+  const checks = (d: DocNode): boolean[] => {
+    const out: boolean[] = []
+    const walk = (n: DocNode) => { if (n.type === 'taskItem') out.push(!!n.attrs?.checked); n.content?.forEach(walk) }
+    walk(d)
+    return out
+  }
+  it('flips the nth item in document order, nested ones after their parent', () => {
+    expect(checks(toggleTaskItem(doc, 0)!)).toEqual([true, false, true])
+    expect(checks(toggleTaskItem(doc, 1)!)).toEqual([false, true, true])
+    expect(checks(toggleTaskItem(doc, 2)!)).toEqual([false, false, false])
+  })
+  it('does not mutate the input and returns null for a missing item', () => {
+    toggleTaskItem(doc, 0)
+    expect(checks(doc)).toEqual([false, false, true])
+    expect(toggleTaskItem(doc, 3)).toBeNull()
   })
 })

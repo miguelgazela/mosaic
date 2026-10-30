@@ -119,6 +119,7 @@ No `anon` grants — shared view goes through `milanote-share` edge function (se
 | `search(q text, lim int default 30)` | (0008) global search, plpgsql, security invoker. Every typed word is a prefix (`shot li` finds "shot list"), all words must match. Returns up to `lim` (max 100) board hits and `lim` card hits: `kind` (`board`/`element`), `id` (board id / card id), `board_id`, `type`, `title`, `snippet` (`ts_headline`; matches wrapped in U+E000 … U+E001), `board_path` (jsonb; for a board hit the path to its parent), `icon`, `color`, `rank`. Boards match on title (tsquery or `ilike`); cards on `elements.search`. Skips Home, trashed boards, trashed cards and cards in a trashed column |
 | `tasks()` | (0004) every item of live to-do cards on live boards, flattened via `jsonb_array_elements(content->'items')`: `element_id, board_id, board_path jsonb, card_title, item_id, item_text, done, due (ISO date text or null), item_pos`. Client groups Overdue / Today / Upcoming / No date |
 | `set_task_done(p_element uuid, p_item text, p_done boolean)` | (0004) flip one item's `done` in place; clears `client_id` so open boards apply the Realtime update |
+| `set_task_due(p_element uuid, p_item text, p_due text)` | (0010) set one item's `due` (ISO `YYYY-MM-DD`) in place, or remove it when `p_due` is null / empty; other formats change nothing. Security invoker like `set_task_done`; clears `client_id` |
 | `board_path(board uuid)` | recursive CTE → breadcrumb array |
 
 ## Trash and purge
@@ -140,7 +141,7 @@ grant select on all tables in schema milanote to authenticated;
 ## Setup checklist (manual, once)
 
 1. SQL Editor → run `0001_init.sql`.
-   (Later migrations: `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync, `0006_board_management.sql` for move / duplicate / trash, `0007_purge_grants.sql` so `milanote-purge` (service role) can read and delete trash rows — run each once in the SQL Editor, in order. Without 0005 lines still load, but saving them fails until it runs. Without 0006 "Move to…", Duplicate board, the board menu's Move to Trash and the Trash page fail. 0002 and 0003 were reserved but never used.)
+   (Later migrations: `0010_set_task_due.sql` (setting a due date from the Tasks list; run after 0004), `0004_tasks.sql` for the Tasks view, `0005_connections_client_id.sql` for line sync, `0006_board_management.sql` for move / duplicate / trash, `0007_purge_grants.sql` so `milanote-purge` (service role) can read and delete trash rows — run each once in the SQL Editor, in order. Without 0005 lines still load, but saving them fails until it runs. Without 0006 "Move to…", Duplicate board, the board menu's Move to Trash and the Trash page fail. 0002 and 0003 were reserved but never used.)
 2. Settings → API → Exposed schemas → add `milanote` (keep existing entries).
 3. `insert into milanote.members (user_id, display_name) values ('<your auth uid>', 'Miguel');`
 4. Deploy edge functions; set secrets.

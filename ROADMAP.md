@@ -23,8 +23,8 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P11 Export | Done (merged `b7efa70`). No migration. Not checked live |
 | D2 Mosaic branding + icons | Done (merged `c3d8686`). Browser keys, clipboard kind and IndexedDB renamed to `mosaic*` (owner had no data). Two icon gaps open, see follow-ups |
 | P12 Polish, phone, performance, PWA | Done (merged `eb22b64`). No migration. Needs deploy (service worker + manifest ship with the web build) |
-| P13 Leftovers | In progress (session started 2026-10-30) |
-| P14 Owner bugs | Not started — starts after P13 merges |
+| P13 Leftovers | Done (merged). Migration `0010_set_task_due.sql` must be run; `milanote-unfurl` must be redeployed |
+| P14 Owner bugs | Not started |
 
 ### Open follow-ups
 
@@ -59,7 +59,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
   - Uploaded images look low quality (blurry).
   - Connection dots show on every side of every card. Show one (or none) by default; reveal the rest with a key or on demand.
 - **P8 (done):** board-card duplicate now deep-copies; board cards register `dropTarget`. Also added undo/redo buttons and empty notes now survive while selected (replaces the P3 discard-on-blur rule).
-- **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
+- **P6 leftovers:** (P13: due date from the Tasks list done) keyboard reorder of to-do items only tested with Alt+Arrow.
 - **P3 leftovers:** Home hint doesn't highlight the Board button / draw the arrow; note checkboxes tick only while editing; swatch edit panel and board "Icon & colour" menu lack Playwright tests.
 - **Deploy:** `supabase functions deploy milanote-unfurl --project-ref varnswkomuckwgobplld` (JWT verification on, no secrets). Then check YouTube, GitHub, a news site and Pinterest unfurl.
 - **P4 leftovers:** selected-image size badge (engine; P12), selection ring should include the caption, lightbox should cap at ~960 px, drop zone should show cards faintly not dimmed, PDF first-page preview not built. Image `caption` is plain text now (P10 search reads it as a string). Deleted image/file objects stay in the bucket until `milanote-purge` (P8). `Toolbar.tsx` has a special Upload button because the `toolbar` field can't express a non-card tool.
@@ -295,6 +295,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 **Design refs:** `04-board-zoom-25`, `00-empty-and-loading`, `03-home-empty`, `00-card-image-and-file`, `04-board-file-drop-offline`, `05-tasks-populated`.
 **Done when:** each item fixed or logged with a reason; lint, unit tests, build and full Playwright pass.
 
+**Status:** done, merged. Owner must run `supabase/migrations/0010_set_task_due.sql` in the SQL Editor (after 0004) and redeploy `supabase functions deploy milanote-unfurl --project-ref varnswkomuckwgobplld`. Done: Tasks "Add date" (native date input over the label, `set_task_due` RPC, DATA_MODEL updated; without 0010 a toast says so); PDF first-page preview (pdf.js loaded lazily, `preview.jpg` beside the original, `previewPath/pages/pw/ph` in content, best effort); selected image shows its size badge and its ring (drawn by the card via `ownSelectionRing`) covers the caption; lightbox long edge ≤ 960 px; drop zone tint 70 % so cards show faintly; unfurl connects to the validated IP (`pinned.ts`, deno tests incl. a local pinned-IP server; real HTTPS checked against example.com and github.com); 25 % level of detail below zoom 0.4 (`LOW_ZOOM`, CSS bars on `[data-lod='low']`, layout unchanged, column titles stay text); viewer: to-do/note checkboxes and swatch show no pointer cursor, rows don't hover; Home hint ring + arrow on the rail's Board button; note checkboxes tick in view mode (`toggleTaskItem`, undoable); Playwright for swatch panel, board Icon & colour, hint, checkboxes, viewer (`e2e/p13.spec.ts`). Bugs: board rename typed straight after "Add board" was lost because `update` ran before the insert landed, fixed by making `update` wait for the pending create (`boardRepo.ts`, Vitest). Lost first `t`: the shortcut listener was added in a passive `useEffect`, i.e. after paint, so cards could be on screen before it existed; now `useLayoutEffect`; the retry in `todo.spec.ts` is gone (not reproduced either way in 40 loops, cause found by reading). Not fixed: double-click on empty canvas sometimes making no note: not reproducible in Playwright (12 variants: while editing, selected card, after click, slow) and not in this headless run of the real flow; suspect a board refetch (window focus) replacing local state before the note has synced, needs a look in the real browser. Home empty copy: the app already matches the full frame `03-home-empty` word for word (the tile in `00-empty-and-loading` is a shorter abbreviation of it), left as is; Tasks empty matches `05-tasks-empty`. Not verified: PDF preview and upload against the real bucket, `set_task_due` against the real database (SQL not run anywhere; same shape as `set_task_done`), unfurl on Supabase's Deno runtime (tested on local Deno), 25 % LOD compared by eye only with a screenshot of a note (no full-frame comparison with `04-board-zoom-25`).
+
 ## P14 — Owner bugs from first real use (after P13 merges)
 Source: "Owner bugs from first real use" under Open follow-ups.
 - **Trash multi-select:** select several or all items; restore or delete forever together (delete forever still asks first).
@@ -304,6 +306,7 @@ Source: "Owner bugs from first real use" under Open follow-ups.
 - **Images:** check upload on the live site; make adding an image obvious (tool rail label/tooltip, empty-board hint, paste).
 - **Image quality:** uploaded images look blurry. Likely causes in code: right after upload the card shows the 512 px thumbnail (`localUrl` = thumb blob, kept in `keepLocal` for the session) even at 100 %; below 100 % zoom it always uses the 512 px thumb, which is too small for a ~300–600 px card on a 2× screen. Fix: show the full image (or a sharper preview sized to card width × devicePixelRatio, e.g. 1024–1280 px) and keep the thumb only for far zoom-out; check encode quality. Compare against the original file on a retina screen.
 - **Board rename:** title field wide enough to show its placeholder; grows with the text.
+- **Double-click on empty canvas sometimes makes no note** (P13 could not reproduce; suspect a window-focus board refetch replacing local state before the note syncs). Reproduce in a real browser on the live site, fix, test.
 - **Connection dots:** not on every side by default. One dot (or none) until hover or a key reveals the rest; keep drag-to-connect working.
 
 **Design refs:** `06-trash-populated`, `00-card-link`, `00-card-image-and-file`, `04-board-populated` (top bar), `00-connections`.

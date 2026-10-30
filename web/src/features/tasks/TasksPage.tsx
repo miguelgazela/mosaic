@@ -5,7 +5,7 @@ import { CalendarCheck, CalendarDays, ChevronRight, CircleAlert, Clock, Search }
 import { useAuth } from '../../auth/AuthProvider'
 import { isoDay, longDate, shortDate } from '../../cards/todo/logic'
 import { Button, LogoMark, Toggle, toast } from '../../ui'
-import { fetchTasks, setTaskDone, TASKS_KEY } from './api'
+import { fetchTasks, setTaskDone, setTaskDue, TASKS_KEY } from './api'
 import { groupTasks, taskPath, type GroupKey, type TaskRow } from './group'
 
 const initials = (email: string) => email.split('@')[0].replace(/[^a-z0-9]/gi, ' ').trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?'
@@ -19,15 +19,28 @@ const HEAD: Record<GroupKey, { icon: typeof Clock | null; cls: string }> = {
 
 const openHref = (t: TaskRow) => `/b/${t.board_id}?card=${t.element_id}`
 
-function DueText({ t, today }: { t: TaskRow; today: string }) {
-  if (!t.due) return <span className="px-2 text-[length:var(--text-sm)] font-medium text-[var(--text-muted)]">Add date</span>
-  const cls = t.due < today ? 'font-semibold text-[var(--danger-ink)]' : t.due === today ? 'font-semibold text-[var(--warning-ink)]' : 'text-[var(--text-secondary)]'
+function DueText({ t, today, onChange }: { t: TaskRow; today: string; onChange: (due: string | null) => void }) {
+  const cls = !t.due ? 'px-2 font-medium text-[var(--text-muted)]' : t.due < today ? 'font-semibold text-[var(--danger-ink)]' : t.due === today ? 'font-semibold text-[var(--warning-ink)]' : 'text-[var(--text-secondary)]'
   // Overdue and today are words/icons in the group header too; the date itself stays text.
-  const text = t.due === today ? 'Today' : t.due < today ? shortDate(t.due) : longDate(t.due)
-  return <span className={`text-[length:var(--text-sm)] ${cls}`}>{text}</span>
+  const text = !t.due ? 'Add date' : t.due === today ? 'Today' : t.due < today ? shortDate(t.due) : longDate(t.due)
+  // A native date input sits over the label (transparent) so the whole label opens the picker, on top of the row link.
+  return (
+    <span className="relative z-10 shrink-0">
+      <span className={`block rounded-[var(--radius-chip)] text-[length:var(--text-sm)] hover:bg-[var(--fill-hover)] ${cls}`}>{text}</span>
+      <input
+        type="date"
+        data-testid="task-due"
+        aria-label={`${t.due ? 'Change' : 'Add'} due date for "${t.item_text}"`}
+        value={t.due ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+        onClick={(e) => { try { e.currentTarget.showPicker() } catch { /* not supported: the input still works by typing */ } }}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </span>
+  )
 }
 
-function Row({ t, today, onToggle }: { t: TaskRow; today: string; onToggle: (done: boolean) => void }) {
+function Row({ t, today, onToggle, onDue }: { t: TaskRow; today: string; onToggle: (done: boolean) => void; onDue: (due: string | null) => void }) {
   return (
     <li data-testid="task-row" data-item-id={t.item_id} className="group/task relative flex items-center gap-3 border-b border-[var(--border)] px-4 py-2 last:border-b-0 hover:bg-[var(--fill-hover)]">
       <input
@@ -46,8 +59,8 @@ function Row({ t, today, onToggle }: { t: TaskRow; today: string; onToggle: (don
         <span className="hidden shrink-0 items-center gap-0.5 text-[length:var(--text-sm)] font-semibold text-[var(--link)] group-hover/task:flex group-focus-within/task:flex">
           Open in board <ChevronRight size={14} aria-hidden />
         </span>
-        <DueText t={t} today={today} />
       </Link>
+      <DueText t={t} today={today} onChange={onDue} />
     </li>
   )
 }
@@ -68,6 +81,18 @@ export function TasksPage() {
       return { prev }
     },
     onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(TASKS_KEY, ctx.prev); toast('Couldn’t update that task', { tone: 'error' }) },
+    onSettled: () => void qc.invalidateQueries({ queryKey: TASKS_KEY }),
+  })
+
+  const setDue = useMutation({
+    mutationFn: (v: { t: TaskRow; due: string | null }) => setTaskDue(v.t.element_id, v.t.item_id, v.due),
+    onMutate: async ({ t, due }) => {
+      await qc.cancelQueries({ queryKey: TASKS_KEY })
+      const prev = qc.getQueryData<TaskRow[]>(TASKS_KEY)
+      qc.setQueryData<TaskRow[]>(TASKS_KEY, (rows) => rows?.map((r) => (r.element_id === t.element_id && r.item_id === t.item_id ? { ...r, due } : r)))
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(TASKS_KEY, ctx.prev); toast('Couldn’t set that date. Has migration 0010 been run?', { tone: 'error' }) },
     onSettled: () => void qc.invalidateQueries({ queryKey: TASKS_KEY }),
   })
 
@@ -127,7 +152,7 @@ export function TasksPage() {
                 </h2>
                 <ul className="overflow-hidden rounded-[var(--radius-menu)] border border-[var(--border)] bg-[var(--card-bg)]">
                   {g.tasks.map((t) => (
-                    <Row key={`${t.element_id}:${t.item_id}`} t={t} today={today} onToggle={(done) => toggle.mutate({ t, done })} />
+                    <Row key={`${t.element_id}:${t.item_id}`} t={t} today={today} onToggle={(done) => toggle.mutate({ t, done })} onDue={(due) => setDue.mutate({ t, due })} />
                   ))}
                 </ul>
               </section>
