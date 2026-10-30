@@ -145,3 +145,38 @@ test('empty board offers Add an image; the rail button is labelled Image', async
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('canvas').getByRole('button', { name: 'Add an image', exact: true }).click()])
   expect(chooser.isMultiple()).toBe(true)
 })
+
+test('connection dots: one on hover, the rest near their edge or when selected; dragging still connects', async ({ page }) => {
+  await page.goto('/dev/board/p14-dots')
+  await expect(page.getByTestId('canvas')).toBeVisible()
+  const c = (await page.getByTestId('canvas').boundingBox())!
+  for (const [x, t] of [[200, 'One'], [600, 'Two']] as const) {
+    await page.mouse.dblclick(c.x + x, c.y + 200)
+    await expect(page.getByRole('textbox', { name: 'Note text' })).toBeFocused()
+    await page.keyboard.type(t)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Escape')
+  }
+  const one = page.locator('[data-card-id]').filter({ hasText: 'One' })
+  const opacity = (side: string) => one.locator(`[data-edge-handle="${side}"]`).evaluate((el) => getComputedStyle(el).opacity)
+  const box = (await one.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await expect.poll(() => opacity('right')).toBe('1')
+  for (const s of ['top', 'left', 'bottom']) expect(await opacity(s)).toBe('0')
+  await page.mouse.move(box.x + 6, box.y + box.height / 2)
+  await expect.poll(() => opacity('left')).toBe('1')
+  expect(await opacity('top')).toBe('0')
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  for (const s of ['top', 'left', 'bottom']) await expect.poll(() => opacity(s)).toBe('1')
+
+  // Drag-to-connect from the default dot still works.
+  await page.keyboard.press('Escape')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const h = (await one.locator('[data-edge-handle="right"]').boundingBox())!
+  const two = (await page.locator('[data-card-id]').filter({ hasText: 'Two' }).boundingBox())!
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(two.x + two.width / 2, two.y + two.height / 2, { steps: 8 })
+  await page.mouse.up()
+  await expect(page.getByTestId('connection')).toHaveCount(1)
+})
