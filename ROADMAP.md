@@ -49,13 +49,14 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
   - Coloured board cards: `BoardTile` with `onCard` mixes the tint 62 % toward text, so lilac/mint boards get a dark grey tile with a white glyph. `00-card-board-and-swatch` ("Hero film") wants a saturated tile in the board's hue (orange tile on a peach card).
   - Icon picker shows bare glyphs; `00-pickers` shows each icon on a grey `--board-tile` with violet glyph and a violet ring on the selected one.
   - Not D2: sign-in "Sign in" button looks disabled until fields are filled and "Email me a magic link" is a text button (mock: violet button, outlined secondary button).
-- **Owner bugs from first real use — 2026-10-30, mosaic.miguelgazela.com (personal account):**
+- **Owner bugs from first real use — 2026-10-30 (P14), mosaic.miguelgazela.com (personal account):**
   - Trash: select several or all items and restore / delete them together.
   - Switching boards re-renders the whole page: top bar and tool rail vanish and come back. Only the canvas should change.
   - Dragging a link card fails: the card leaves its spot and jumps up and to the left.
   - Link previews look poor. `milanote-unfurl` deployed 2026-10-30. Cards that failed before stay failed (`failed: true` is never retried): add a "Retry preview" action or retry failed cards once on load. Then improve the card.
   - "Can't add images?": Upload button on the tool rail and drag-drop exist (P4) but were not found, or failed on production. Check upload on the live site; make adding an image obvious.
   - Renaming a board: the title field is too narrow to show its placeholder.
+  - Uploaded images look low quality (blurry).
   - Connection dots show on every side of every card. Show one (or none) by default; reveal the rest with a key or on demand.
 - **P8 (done):** board-card duplicate now deep-copies; board cards register `dropTarget`. Also added undo/redo buttons and empty notes now survive while selected (replaces the P3 discard-on-blur rule).
 - **P6 leftovers:** set a due date from the Tasks list needs a `set_task_due` RPC ("Add date" is inert); keyboard reorder of to-do items only tested with Alt+Arrow.
@@ -301,6 +302,7 @@ Source: "Owner bugs from first real use" under Open follow-ups.
 - **Link card drag:** dragging a link card moves it normally (no jump up-left). Reproduce, fix, Playwright test.
 - **Link previews:** failed previews can be retried (menu action, and one automatic retry on load); review the card against `00-card-link` refs and polish.
 - **Images:** check upload on the live site; make adding an image obvious (tool rail label/tooltip, empty-board hint, paste).
+- **Image quality:** uploaded images look blurry. Likely causes in code: right after upload the card shows the 512 px thumbnail (`localUrl` = thumb blob, kept in `keepLocal` for the session) even at 100 %; below 100 % zoom it always uses the 512 px thumb, which is too small for a ~300–600 px card on a 2× screen. Fix: show the full image (or a sharper preview sized to card width × devicePixelRatio, e.g. 1024–1280 px) and keep the thumb only for far zoom-out; check encode quality. Compare against the original file on a retina screen.
 - **Board rename:** title field wide enough to show its placeholder; grows with the text.
 - **Connection dots:** not on every side by default. One dot (or none) until hover or a key reveals the rest; keep drag-to-connect working.
 
