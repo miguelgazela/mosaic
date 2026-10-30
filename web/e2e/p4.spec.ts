@@ -78,6 +78,8 @@ test('dropping an image shows the drop zone, uploads under {uid}/{id}/ and opens
   const id = (await page.locator('[data-card-id]').first().getAttribute('data-card-id'))!
   expect(mock.uploads).toContain(`dev-user/${id}/original.png`)
   expect(mock.uploads).toContain(`dev-user/${id}/thumb.webp`)
+  // P14: a just-uploaded image shows the full image (600 px wide), not the 512 px thumb.
+  await expect.poll(() => card.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(600)
   // 600 × 400 fits 280 × 360 → 280 × 187 (3:2).
   const box = (await card.boundingBox())!
   expect(Math.abs(box.width / box.height - 1.5)).toBeLessThan(0.02)

@@ -1,3 +1,6 @@
+import { ImagePlus } from 'lucide-react'
+import { pickFiles } from '../features/upload/dropFiles'
+import { centerOfView } from './geometry'
 import { useBoard } from './store'
 
 /** Shown on a board with no cards (00-empty-and-loading / 04-board-empty). */
@@ -16,6 +19,17 @@ export function EmptyHint({ readOnly = false }: { readOnly?: boolean }) {
           Double-click anywhere to add a note, or drag a card from the toolbar on the left.
         </p>
       )}
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={() => pickFiles(() => { const s = useBoard.getState(); return centerOfView(s.viewport, s.size) })}
+          className="pointer-events-auto mt-3 flex h-8 items-center gap-1.5 rounded-[var(--radius-ui)] border border-[var(--border)] bg-[var(--card-bg)] px-3 text-[length:var(--text-sm)] font-semibold hover:bg-[var(--fill-hover)]"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <ImagePlus size={14} aria-hidden /> Add an image
+        </button>
+      )}
+      {!readOnly && <p className="mt-2 text-[length:var(--text-caption)] text-[var(--text-muted)]">You can also drop files here or paste an image.</p>}
     </div>
   )
 }

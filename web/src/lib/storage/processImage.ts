@@ -39,9 +39,9 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
   try {
     const mime = source.type || file.type
     const plan = planImage({ w: bmp.width, h: bmp.height, bytes: source.size, mime })
-    const original = plan.reencode ? await encode(bmp, plan.out.w, plan.out.h, plan.mime, 0.85) : source.type ? source : new Blob([source], { type: mime })
+    const original = plan.reencode ? await encode(bmp, plan.out.w, plan.out.h, plan.mime, 0.92) : source.type ? source : new Blob([source], { type: mime })
     const t = fitWithin(bmp.width, bmp.height, THUMB_EDGE)
-    const thumb = await encode(bmp, t.w, t.h, 'image/webp', 0.8)
+    const thumb = await encode(bmp, t.w, t.h, 'image/webp', 0.85)
     return { original, thumb, w: plan.out.w, h: plan.out.h, name }
   } finally {
     bmp.close()

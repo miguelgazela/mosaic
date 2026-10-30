@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardSizeFor, fitWithin, isHeic, planImage } from './imagePlan'
+import { cardSizeFor, fitWithin, isHeic, planImage, thumbIsSharp } from './imagePlan'
 import { extOf, formatBytes, originalPath, thumbPath } from './paths'
 
 describe('image plan', () => {
@@ -35,5 +35,17 @@ describe('paths', () => {
     expect(extOf('README')).toBe('bin')
     expect(formatBytes(48 * 1024)).toBe('48 KB')
     expect(formatBytes(4.2 * 1024 * 1024)).toBe('4.2 MB')
+  })
+})
+
+describe('thumbIsSharp', () => {
+  it('280 px card: thumb only when zoomed out enough for the device pixel ratio', () => {
+    expect(thumbIsSharp(280, 1, 1)).toBe(true)
+    expect(thumbIsSharp(280, 1, 2)).toBe(false) // 560 px > 512
+    expect(thumbIsSharp(280, 0.95, 2)).toBe(false) // was the blurry case: zoom < 1 always used the thumb
+    expect(thumbIsSharp(280, 0.5, 2)).toBe(true)
+  })
+  it('wide card needs the full image sooner', () => {
+    expect(thumbIsSharp(600, 1, 1)).toBe(false)
   })
 })

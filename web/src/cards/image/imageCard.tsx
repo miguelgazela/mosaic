@@ -4,7 +4,7 @@ import { patchCmd } from '../../canvas/commands'
 import { useBoard } from '../../canvas/store'
 import { addImages, keepLocal, retryUpload, useUploads } from '../../features/upload/uploads'
 import { downloadObject } from '../../lib/storage/client'
-import { isImageFile } from '../../lib/storage/imagePlan'
+import { isImageFile, thumbIsSharp } from '../../lib/storage/imagePlan'
 import { formatBytes } from '../../lib/storage/paths'
 import { useExportMode } from '../../lib/storage/exportMode'
 import { useNearViewport, useSignedUrl } from '../../lib/storage/useSignedUrl'
@@ -56,7 +56,8 @@ function ImageCard({ element: el, inColumn, selected }: CardProps) {
   const c = readImage(el.content)
   const up = useUploads((s) => s.byId[el.id])
   const exporting = useExportMode((s) => s.on)
-  const thumbView = useBoard((s) => s.viewport.zoom < 1) && !exporting
+  const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1
+  const thumbView = useBoard((s) => thumbIsSharp(el.width, s.viewport.zoom, dpr)) && !exporting
   const editing = useBoard((s) => s.editing === el.id)
   const lightboxOpen = useLightbox((s) => s.openId === el.id)
   const root = useRef<HTMLDivElement>(null)

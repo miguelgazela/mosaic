@@ -5,7 +5,7 @@ import { patchCmd } from '../../canvas/commands'
 import { useBoard } from '../../canvas/store'
 import type { CardDefinition, CardProps } from '../types'
 import { displayUrl, domainOf, embedSrc, formatDuration, linkContent, normalizeUrl } from './logic'
-import { unfurlCard, useUnfurling } from './unfurl'
+import { unfurlCard, useUnfurling, wasTried } from './unfurl'
 
 const PREVIEW_KEYS = ['title', 'description', 'image', 'favicon', 'embed', 'duration', 'failed']
 
@@ -35,7 +35,7 @@ function DomainRow({ url, favicon, loading }: { url: string; favicon?: string; l
   return (
     <div className="mt-1.5 flex items-center gap-1.5 text-[length:var(--text-caption)] leading-[var(--leading-caption)] text-[var(--text-muted)]">
       {loading ? <LoaderCircle size={14} className="shrink-0 animate-spin" aria-hidden /> : <Favicon src={favicon} domain={domain} />}
-      <a href={url} target="_blank" rel="noopener noreferrer" data-testid="link-domain" className="truncate hover:text-[var(--link-hover)] hover:underline" {...guard}>{domain}</a>
+      <a href={url} draggable={false} target="_blank" rel="noopener noreferrer" data-testid="link-domain" className="truncate hover:text-[var(--link-hover)] hover:underline" {...guard}>{domain}</a>
     </div>
   )
 }
@@ -50,7 +50,9 @@ function LinkCard({ element: el }: CardProps) {
   const hasPreview = Boolean(c.title || c.image || c.embed)
 
   useEffect(() => {
-    if (c.url && !hasPreview && !c.failed && !editing) void unfurlCard(el.id, c.url)
+    if (!c.url || hasPreview || editing) return
+    // Failed earlier (maybe before the function existed): try again once per session.
+    if (!c.failed || !wasTried(el.id, c.url)) void unfurlCard(el.id, c.url)
   }, [el.id, c.url, hasPreview, c.failed, editing])
   useEffect(() => { setPlaying(false); setImgBad(false) }, [c.url])
 
@@ -59,10 +61,22 @@ function LinkCard({ element: el }: CardProps) {
 
   const loading = !hasPreview && !c.failed
   if (c.failed && !hasPreview) {
+    const url = c.url
     return (
       <div data-testid="link-card" data-state="failed" className="flex items-center gap-2 rounded-[var(--radius-card)] bg-[var(--card-bg)] px-3.5 py-2.5" onDoubleClick={() => useBoard.getState().setEditing(el.id)}>
         <Globe size={16} className="shrink-0 text-[var(--link)]" aria-hidden />
-        <a href={c.url} target="_blank" rel="noopener noreferrer" className="min-w-0 break-all text-[length:var(--text-sm)] leading-[var(--leading-sm)] text-[var(--link)] underline hover:text-[var(--link-hover)]" {...guard}>{displayUrl(c.url)}</a>
+        <a href={c.url} draggable={false} target="_blank" rel="noopener noreferrer" className="min-w-0 break-all text-[length:var(--text-sm)] leading-[var(--leading-sm)] text-[var(--link)] underline hover:text-[var(--link-hover)]" {...guard}>{displayUrl(c.url)}</a>
+        <button
+          type="button"
+          data-nodrag
+          aria-label="Retry preview"
+          title="Retry preview"
+          disabled={busy}
+          onClick={() => void unfurlCard(el.id, url)}
+          className="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-[var(--radius-ui)] text-[var(--text-secondary)] hover:bg-[var(--fill-hover)] focus-visible:shadow-[var(--ring-focus)]"
+        >
+          {busy ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <RefreshCw size={14} aria-hidden />}
+        </button>
       </div>
     )
   }
@@ -114,7 +128,7 @@ function LinkCard({ element: el }: CardProps) {
         ) : (
           <>
             {c.title && (
-              <a href={c.url} target="_blank" rel="noopener noreferrer" data-testid="link-title" className="line-clamp-2 block text-[length:var(--text-card-title)] font-semibold leading-[var(--leading-card-title)] text-[var(--text)] hover:text-[var(--link-hover)]" {...guard}>{c.title}</a>
+              <a href={c.url} draggable={false} target="_blank" rel="noopener noreferrer" data-testid="link-title" className="line-clamp-2 block text-[length:var(--text-card-title)] font-semibold leading-[var(--leading-card-title)] text-[var(--text)] hover:text-[var(--link-hover)]" {...guard}>{c.title}</a>
             )}
             {c.description && !c.embed && (
               <p className="mt-0.5 line-clamp-3 text-[length:var(--text-sm)] leading-[var(--leading-sm)] text-[var(--text-secondary)]">{c.description}</p>
@@ -211,7 +225,7 @@ export const linkCard: CardDefinition = {
       { id: 'edit', label: 'Edit link', icon: Pencil, run: () => useBoard.getState().setEditing(el.id) },
       {
         id: 'refresh',
-        label: 'Refresh preview',
+        label: c.failed && !c.title ? 'Retry preview' : 'Refresh preview',
         icon: RefreshCw,
         run: () => {
           const s = useBoard.getState()

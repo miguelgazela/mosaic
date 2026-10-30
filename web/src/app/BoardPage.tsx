@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
 import { CanvasView } from '../canvas/CanvasView'
+import { Toolbar } from '../canvas/Toolbar'
 import { elementHeight, useBoard } from '../canvas/store'
 import { HomeEmpty } from '../features/boards/HomeEmpty'
 import { BoardSkeleton } from '../features/boards/BoardSkeleton'
-import { saveSkeleton } from '../features/boards/skeleton'
+import { saveSkeleton, loadSkeleton } from '../features/boards/skeleton'
 import { recordRecent } from '../features/boards/recent'
 import { fetchBoard, renameBoard, type BoardData, type BoardMeta } from '../lib/sync/boardApi'
 import { startBoardSync } from '../lib/sync/boardSync'
@@ -127,7 +128,8 @@ export function BoardPage() {
     <div className="flex h-full flex-col">
       <TopBar
         ancestors={path.slice(0, -1).map((p) => ({ id: p.id, title: p.title, to: `/b/${p.id}` }))}
-        title={current?.title ?? ''}
+        title={current?.title ?? (data ? '' : loadSkeleton(boardId)?.title ?? '')}
+        loading={!data}
         onRename={(t) => rename.mutate(t)}
         saveState={saveState}
         email={session?.user.email ?? ''}
@@ -140,7 +142,15 @@ export function BoardPage() {
         <div role="status" className="flex shrink-0 items-center justify-center gap-2 bg-[var(--primary-soft)] px-4 py-2 text-center text-[length:var(--text-sm)] font-medium text-[var(--primary-ink)]"><Eye size={14} aria-hidden /> View only on phone. Edit on a computer.</div>
       )}
       <div className="relative min-h-0 flex-1">
-        {readyFor === boardId ? <CanvasView hideEmptyHint={!!data?.board.is_home} hidePill={phone} /> : <BoardSkeleton key={boardId} boardId={boardId} />}
+        {readyFor === boardId
+          ? <CanvasView hideEmptyHint={!!data?.board.is_home} hidePill={phone} />
+          : (
+            // Chrome stays put while a board loads: the rail is drawn here, only the canvas area shows the skeleton.
+            <div className="flex h-full w-full">
+              {!phone && <Toolbar />}
+              <div className="relative h-full min-w-0 flex-1"><BoardSkeleton key={boardId} boardId={boardId} /></div>
+            </div>
+          )}
         {readyFor === boardId && data?.board.is_home && <HomeEmpty />}
       </div>
     </div>

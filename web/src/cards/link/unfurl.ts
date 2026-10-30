@@ -30,8 +30,13 @@ export async function fetchPreview(url: string): Promise<Preview> {
  * raw patch, not a command: it is derived data, so Undo must not roll it back (the card would refetch).
  * The write still reaches the sync queue through the store.
  */
+/** `id|url` pairs fetched this session; a failed card loaded from the database is retried once, not in a loop. */
+const tried = new Set<string>()
+export const wasTried = (id: string, url: string) => tried.has(`${id}|${url}`)
+
 export async function unfurlCard(id: string, url: string): Promise<void> {
   if (useUnfurling.getState().ids[id]) return
+  tried.add(`${id}|${url}`)
   setBusy(id, true)
   let patch: Record<string, unknown>
   try {
