@@ -116,7 +116,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
         <kbd className="rounded-[var(--radius-chip)] bg-[var(--fill-hover)] px-1.5 text-[length:var(--text-caption)] font-medium">⌘K</kbd>
       </button>
       <Button variant="ghost" onClick={() => navigate('/tasks')}><CheckCircle2 size={16} /> Tasks</Button>
-      {(board || loading) && !readOnly && <Button variant="primary" disabled={!board} onClick={() => setSharing(true)}>Share</Button>}
+      {(board || loading) && !readOnly && <Button variant="primary" aria-disabled={!board} onClick={() => { if (board) setSharing(true) }}>Share</Button>}
       <AccountMenu email={email} onSignOut={onSignOut} />
       {sharing && board && <ShareDialog boardId={board.id} title={title} onClose={() => setSharing(false)} />}
       {searchOpen && <SearchPalette onClose={() => setSearchOpen(false)} />}
