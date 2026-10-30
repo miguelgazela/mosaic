@@ -1,4 +1,6 @@
-// SSRF guard: only public http(s) hosts, checked on every redirect hop.
+// SSRF guard: only public http(s) hosts, checked on every redirect hop. The request then goes to the IP that was
+// checked (see pinned.ts), so DNS cannot answer differently the second time.
+import { pinnedFetch } from './pinned.ts'
 
 export class UnfurlError extends Error {
   constructor(public code: 'blocked' | 'timeout' | 'too_large' | 'bad_url' | 'upstream', msg?: string) {
@@ -90,8 +92,11 @@ export const denoResolver: Resolver = async (host) => {
   return out
 }
 
-/** Throws UnfurlError('blocked' | 'bad_url') unless `url` is a public http(s) URL. */
-export async function assertPublicUrl(raw: string | URL, resolve: Resolver = denoResolver): Promise<URL> {
+/**
+ * Throws UnfurlError('blocked' | 'bad_url') unless `url` is a public http(s) URL. Returns the URL and one
+ * validated address to connect to: every address the name resolves to is checked, then the first is used.
+ */
+export async function resolvePublicUrl(raw: string | URL, resolve: Resolver = denoResolver): Promise<{ url: URL; ip: string }> {
   let u: URL
   try { u = new URL(raw) } catch { throw new UnfurlError('bad_url') }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new UnfurlError('bad_url', 'protocol')
@@ -101,20 +106,24 @@ export async function assertPublicUrl(raw: string | URL, resolve: Resolver = den
   // URL() normalises 0x7f.1, 2130706433, etc. to dotted decimal, so literals land here as plain IPs.
   if (/^[\d.]+$/.test(host) || host.includes(':')) {
     if (isPrivateIp(host)) throw new UnfurlError('blocked', 'ip')
-    return u
+    return { url: u, ip: host }
   }
   const ips = await resolve(host)
   if (!ips.length) throw new UnfurlError('upstream', 'dns')
   if (ips.some(isPrivateIp)) throw new UnfurlError('blocked', 'resolves to private ip')
-  return u
+  return { url: u, ip: ips[0] }
 }
+
+export const assertPublicUrl = async (raw: string | URL, resolve: Resolver = denoResolver): Promise<URL> =>
+  (await resolvePublicUrl(raw, resolve)).url
 
 export interface FetchOpts {
   timeoutMs?: number
   maxBytes?: number
   maxRedirects?: number
   resolve?: Resolver
-  fetchImpl?: typeof fetch
+  /** Gets `url` from the validated address `ip` (default: pinnedFetch). Tests inject a fake. */
+  fetchImpl?: (url: URL, init: { ip: string; signal: AbortSignal; headers?: HeadersInit }) => Promise<Response>
   headers?: HeadersInit
 }
 
@@ -125,16 +134,16 @@ export interface FetchOpts {
  */
 export async function safeFetchText(
   url: string,
-  { timeoutMs = 5000, maxBytes = 1_000_000, maxRedirects = 5, resolve = denoResolver, fetchImpl = fetch, headers }: FetchOpts = {},
+  { timeoutMs = 5000, maxBytes = 1_000_000, maxRedirects = 5, resolve = denoResolver, fetchImpl = pinnedFetch, headers }: FetchOpts = {},
 ): Promise<{ finalUrl: URL; body: string; contentType: string; truncated: boolean }> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
-    let current = await assertPublicUrl(url, resolve)
+    let { url: current, ip } = await resolvePublicUrl(url, resolve)
     for (let hop = 0; ; hop++) {
       let res: Response
       try {
-        res = await fetchImpl(current, { redirect: 'manual', signal: ctrl.signal, headers })
+        res = await fetchImpl(current, { ip, signal: ctrl.signal, headers })
       } catch (e) {
         if (ctrl.signal.aborted) throw new UnfurlError('timeout')
         throw new UnfurlError('upstream', String(e))
@@ -142,7 +151,7 @@ export async function safeFetchText(
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
         await res.body?.cancel()
         if (hop >= maxRedirects) throw new UnfurlError('upstream', 'too many redirects')
-        current = await assertPublicUrl(new URL(res.headers.get('location')!, current), resolve)
+        ;({ url: current, ip } = await resolvePublicUrl(new URL(res.headers.get('location')!, current), resolve))
         continue
       }
       if (!res.ok) { await res.body?.cancel(); throw new UnfurlError('upstream', `status ${res.status}`) }

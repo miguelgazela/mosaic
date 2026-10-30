@@ -8,9 +8,10 @@ Guards: http(s) only, no credentials in URL, no `localhost`/`.local`/`.internal`
 redirect (max 5). 5 s total timeout, 1 MB body cap. YouTube/Vimeo use oEmbed, then page meta fills gaps.
 
 ```bash
-deno test --allow-net=none supabase/functions/milanote-unfurl/ssrf_test.ts supabase/functions/milanote-unfurl/parse_test.ts
+deno test --allow-net=127.0.0.1 supabase/functions/milanote-unfurl/ssrf_test.ts supabase/functions/milanote-unfurl/parse_test.ts
 supabase functions deploy milanote-unfurl --project-ref varnswkomuckwgobplld
 ```
 
 No extra secrets: `SUPABASE_URL` and `SUPABASE_ANON_KEY` are injected by Supabase. Keep JWT verification on (default).
-Known gap: DNS is resolved by the guard and again by `fetch`, so a rebinding server could answer differently the second time.
+DNS rebinding: the guard resolves the name once, checks every address, then connects to that validated IP itself (`pinned.ts`, a small HTTP/1.1 GET client over `Deno.connect`/`startTls`; TLS still checks the certificate against the hostname). `fetch` is not used, so there is no second lookup. Each redirect hop is resolved, checked and pinned the same way. Only GET, no compression, no keep-alive.
+If `deno test` needs it, run with `--allow-net` (the pinned-IP test starts a server on 127.0.0.1).
