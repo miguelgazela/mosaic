@@ -83,7 +83,8 @@ async function runImage(id: string, file: File): Promise<void> {
   }
   const size = cardSizeFor(prepared.w, prepared.h)
   mergeContent(id, { w: prepared.w, h: prepared.h }, { width: size.width, height: size.height })
-  const localUrl = URL.createObjectURL(prepared.thumb)
+  // The full (≤ 2560 px) image, not the 512 px thumb: it stays on screen until reload and must look sharp.
+  const localUrl = URL.createObjectURL(prepared.original)
   setState(id, { localUrl })
   try {
     const uid = await currentUid()

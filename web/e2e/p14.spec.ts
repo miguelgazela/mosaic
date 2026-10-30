@@ -123,3 +123,25 @@ test.describe('trash multi-select', () => {
     await expect(page.getByTestId('trash-bulk')).toHaveCount(0)
   })
 })
+
+test('board name field shows its whole placeholder and grows with the text', async ({ page }) => {
+  await page.goto('/dev/board/p14-rename')
+  await expect(page.getByTestId('canvas')).toBeVisible()
+  await page.keyboard.press('b')
+  const input = page.getByRole('textbox', { name: 'Board name' })
+  await expect(input).toBeFocused()
+  const fits = () => input.evaluate((el: HTMLInputElement) => el.scrollWidth <= el.clientWidth)
+  expect(await fits()).toBe(true)
+  const w0 = (await input.boundingBox())!.width
+  await page.keyboard.type('A fairly long board name for the autumn shoot')
+  expect(await fits()).toBe(true)
+  expect((await input.boundingBox())!.width).toBeGreaterThan(w0 + 40)
+})
+
+test('empty board offers Add an image; the rail button is labelled Image', async ({ page }) => {
+  await page.goto('/dev/board/p14-image-hint')
+  await expect(page.getByTestId('canvas')).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Tools' }).getByRole('button', { name: /Add an image or file/ })).toContainText('Image')
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('canvas').getByRole('button', { name: 'Add an image', exact: true }).click()])
+  expect(chooser.isMultiple()).toBe(true)
+})

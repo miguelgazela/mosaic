@@ -46,3 +46,9 @@ export function cardSizeFor(w: number, h: number): { width: number; height: numb
   const width = Math.max(96, Math.round((w * k) / 8) * 8)
   return { width, height: Math.round(width * (h / w)) }
 }
+
+/**
+ * The 512 px thumbnail is enough only when the card's on-screen width in device pixels fits inside it;
+ * anything larger (a 280 px card on a 2x screen is 560) needs the full image or it looks soft.
+ */
+export const thumbIsSharp = (cardWidth: number, zoom: number, dpr: number): boolean => cardWidth * zoom * dpr <= THUMB_EDGE

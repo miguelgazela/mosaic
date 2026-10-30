@@ -72,7 +72,10 @@ function TitleInput({ boardId, initial }: { boardId: string; initial: string }) 
     }
     useBoard.getState().setEditing(null)
   }
+  // Wider than the 136 px card so the placeholder fits, and grows with the text; centred on the card.
+  const chars = Math.min(40, Math.max(draft.length, 16))
   return (
+    <div className="relative h-[26px]">
     <input
       ref={ref}
       data-nodrag
@@ -88,8 +91,10 @@ function TitleInput({ boardId, initial }: { boardId: string; initial: string }) 
         if (e.key === 'Enter') finish(true)
         else if (e.key === 'Escape') finish(false)
       }}
-      className="w-full rounded-[var(--radius-chip)] border border-[var(--primary)] bg-[var(--card-bg)] px-1.5 py-0.5 text-center text-[length:var(--text-card)] font-semibold outline-none"
+      style={{ width: `calc(${chars}ch + 16px)` }}
+      className="absolute left-1/2 top-0 -translate-x-1/2 rounded-[var(--radius-chip)] border border-[var(--primary)] bg-[var(--card-bg)] px-1.5 py-0.5 text-center text-[length:var(--text-card)] font-semibold outline-none"
     />
+    </div>
   )
 }
 

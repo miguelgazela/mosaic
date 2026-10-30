@@ -91,7 +91,7 @@ export function Toolbar() {
         ]
       })}
       {!cards.some((c) => c.type === 'board') && lineTile}
-      <RailButton label="Upload" tip="Upload files" icon={<Upload size={18} />} onClick={() => picker.current?.click()} />
+      <RailButton label="Image" tip="Add an image or file (or paste one)" icon={<Upload size={18} />} onClick={() => picker.current?.click()} />
       <input
         ref={picker}
         type="file"
