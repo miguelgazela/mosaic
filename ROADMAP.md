@@ -22,7 +22,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P10 Search | Done (merged `0a566f8`). Migration 0008 applied; owner tried it on the dev db |
 | P11 Export | Done (merged `b7efa70`). No migration. Not checked live |
 | D2 Mosaic branding + icons | Done (merged `c3d8686`). Browser keys, clipboard kind and IndexedDB renamed to `mosaic*` (owner had no data). Two icon gaps open, see follow-ups |
-| P12 | Not started — each starts only when the owner says so |
+| P12 | Done on branch `claude/p12-polish-8e8df3` (not merged). No migration, no function change. Needs deploy only (service worker + manifest ship with the web build) |
 
 ### Open follow-ups
 
@@ -263,6 +263,8 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 - Remaining empty/loading states; PWA manifest + service worker (app shell only); manifest icons come from D2.
 - Accessibility pass against NFR-8.
 - Fix the gaps logged under "Gaps found in D2 design check" (coloured board tile, icon picker tiles, sign-in buttons) and the open bugs from the P8/P9 live checks.
+
+**Status:** done on `claude/p12-polish-8e8df3` (not merged). Shortcuts sheet (`features/shortcuts/`, `?` anywhere not typing, also from the account menu); account menu shows the `members.display_name` (falls back to the email's local part). Phone (`lib/usePhone.ts`): compact top bar (back/title/search/account), "View only on phone. Edit on a computer." strip, zoom pill centred with a fit button, 16 px inputs and 44 px targets in chrome (CSS block at the end of `index.css`); shared viewer shows the logo only on phone. PWA: `public/manifest.webmanifest`, `public/sw.js` (same-origin shell + hashed assets only; Supabase and other origins are never touched), registered in production builds only, `mosaic-icon-192.png` added. Perf: viewport culling in `canvas/layers.tsx` (`visibleIds`; selected/editing cards and exports keep everything mounted). Fixed bugs: empty notes hidden from Trash (`visibleTrash`), viewer no longer shows "+ Add item" / "Drag cards here", empty shared board shows "This board is empty", Share dialog "Include sub-boards" now on (DB default), coloured board tile is a saturated hue (`.board-tile-hue`), icon picker tiles grey with violet glyph and ring, sign-in buttons always enabled (validation message instead). `todo.spec.ts` stabilised (key press retried until the card exists; clicks the canvas, not the tool rail). Axe check (`e2e/p12.spec.ts`) clean on sign in, board, Trash, Tasks, shortcuts sheet. Measured (dev server, headless Chromium, 500 notes): pan 60 fps, zoom 52–53 fps (p95 frame 33 ms), fit-to-content 25 % pan 60 fps, 42 of 500 cards mounted at 100 %; 300 notes open in ~110 ms warm. Not reproduced: board menu not opening with a card selected (test added, passes). Follow-ups: 25 % level-of-detail (mock shows bars instead of text), real-project open time for 300 cards (NFR-2 only measured on the dev canvas), PDF preview, Home empty-state copy differs from the mock, "Shared by" name needs the owner to set `members.display_name`, swatch/checkbox clickable-looking in the viewer.
 
 **Design refs:** `00-shortcuts-and-confirm` (shortcuts sheet), `00-menus` (account menu), `04-board-phone`, `07-shared-board-phone`, `01-sign-in-phone`, `04-board-laptop-1280`, `04-board-zoom-25`, `00-empty-and-loading`.
 **Done when:** NFRs in REQUIREMENTS §4 measured and met; phone + laptop frames match.
