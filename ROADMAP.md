@@ -23,7 +23,8 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
 | P11 Export | Done (merged `b7efa70`). No migration. Not checked live |
 | D2 Mosaic branding + icons | Done (merged `c3d8686`). Browser keys, clipboard kind and IndexedDB renamed to `mosaic*` (owner had no data). Two icon gaps open, see follow-ups |
 | P12 Polish, phone, performance, PWA | Done (merged `eb22b64`). No migration. Needs deploy (service worker + manifest ship with the web build) |
-| P13 Leftovers | Not started |
+| P13 Leftovers | In progress (session started 2026-10-30) |
+| P14 Owner bugs | Not started — starts after P13 merges |
 
 ### Open follow-ups
 
@@ -292,3 +293,16 @@ Gaps vs designs (handled in D1): no snap guides, no top bar, no selection toolba
 **Out of scope:** deploying functions, Supabase settings, anything outside schema `milanote`.
 **Design refs:** `04-board-zoom-25`, `00-empty-and-loading`, `03-home-empty`, `00-card-image-and-file`, `04-board-file-drop-offline`, `05-tasks-populated`.
 **Done when:** each item fixed or logged with a reason; lint, unit tests, build and full Playwright pass.
+
+## P14 — Owner bugs from first real use (after P13 merges)
+Source: "Owner bugs from first real use" under Open follow-ups.
+- **Trash multi-select:** select several or all items; restore or delete forever together (delete forever still asks first).
+- **Board switch keeps chrome:** top bar and tool rail stay mounted when moving between boards; only the canvas area shows the skeleton.
+- **Link card drag:** dragging a link card moves it normally (no jump up-left). Reproduce, fix, Playwright test.
+- **Link previews:** failed previews can be retried (menu action, and one automatic retry on load); review the card against `00-card-link` refs and polish.
+- **Images:** check upload on the live site; make adding an image obvious (tool rail label/tooltip, empty-board hint, paste).
+- **Board rename:** title field wide enough to show its placeholder; grows with the text.
+- **Connection dots:** not on every side by default. One dot (or none) until hover or a key reveals the rest; keep drag-to-connect working.
+
+**Design refs:** `03-trash-*` / `06-trash-*`, `00-card-link*`, `00-card-image-and-file`, `04-board-*` (top bar), `00-connections*` — check names in `design/screens/`.
+**Done when:** each item fixed with a test (or logged with a reason); lint, unit tests, build and full Playwright pass.
