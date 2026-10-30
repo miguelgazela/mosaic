@@ -68,9 +68,11 @@ export interface TopBarProps {
   board?: { id: string; parentId: string | null; icon?: string | null; color?: string | null }
   /** FR-54: view-only chip instead of rename, board menu, save status and Share. */
   readOnly?: boolean
+  /** Board data not here yet: keep the chrome, disable what needs the board. */
+  loading?: boolean
 }
 
-export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut, board, readOnly }: TopBarProps) {
+export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut, board, readOnly, loading }: TopBarProps) {
   const navigate = useNavigate()
   const phone = usePhone()
   const [renameToken, setRenameToken] = useState(0)
@@ -114,7 +116,7 @@ export function TopBar({ ancestors, title, onRename, saveState, email, onSignOut
         <kbd className="rounded-[var(--radius-chip)] bg-[var(--fill-hover)] px-1.5 text-[length:var(--text-caption)] font-medium">⌘K</kbd>
       </button>
       <Button variant="ghost" onClick={() => navigate('/tasks')}><CheckCircle2 size={16} /> Tasks</Button>
-      {board && !readOnly && <Button variant="primary" onClick={() => setSharing(true)}>Share</Button>}
+      {(board || loading) && !readOnly && <Button variant="primary" disabled={!board} onClick={() => setSharing(true)}>Share</Button>}
       <AccountMenu email={email} onSignOut={onSignOut} />
       {sharing && board && <ShareDialog boardId={board.id} title={title} onClose={() => setSharing(false)} />}
       {searchOpen && <SearchPalette onClose={() => setSearchOpen(false)} />}

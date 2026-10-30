@@ -37,12 +37,17 @@ function Tile({ item }: { item: TrashItem }) {
   )
 }
 
-function Row({ item, now, onRestore, onDelete }: { item: TrashItem; now: number; onRestore: () => void; onDelete: () => void }) {
+const keyOf = (i: TrashItem) => `${i.kind}:${i.id}`
+
+function Row({ item, now, checked, onCheck, onRestore, onDelete }: { item: TrashItem; now: number; checked: boolean; onCheck: (on: boolean) => void; onRestore: () => void; onDelete: () => void }) {
   const { title, kind } = describeItem(item)
   const left = daysLeft(item.deletedAt, now)
   const urgent = left <= URGENT_DAYS
   return (
     <tr data-testid="trash-row" data-kind={item.kind} className="border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--fill-hover)]">
+      <td className="w-10 py-3 pl-4">
+        <input type="checkbox" aria-label={`Select ${title}`} checked={checked} onChange={(e) => onCheck(e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" />
+      </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <Tile item={item} />
@@ -85,7 +90,12 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
   const repo = getBoardRepo()
   const items = useQuery({ queryKey: TRASH_KEY, queryFn: () => getBoardRepo().trashItems(), refetchOnWindowFocus: true, staleTime: 0 })
   const list = items.data ? visibleTrash(items.data) : []
-  const [asking, setAsking] = useState<TrashItem | null>(null)
+  const [asking, setAsking] = useState<TrashItem[] | null>(null)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  // Only items still in the list count (a refresh may have dropped some).
+  const chosen = list.filter((i) => picked.has(keyOf(i)))
+  const allOn = list.length > 0 && chosen.length === list.length
+  const setOne = (i: TrashItem, on: boolean) => setPicked((p) => { const n = new Set(p); if (on) n.add(keyOf(i)); else n.delete(keyOf(i)); return n })
   const now = Date.now()
   const email = session?.user.email ?? ''
 
@@ -94,19 +104,40 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
     void qc.invalidateQueries({ queryKey: ['board-tree'] })
     void qc.invalidateQueries({ queryKey: ['board-count'] })
   }
+  // Boards first, so cards that were in a trashed board can follow it back.
+  const boardsFirst = (xs: TrashItem[]) => [...xs].sort((a, b) => Number(b.kind === 'board') - Number(a.kind === 'board'))
   const restore = useMutation({
-    mutationFn: (i: TrashItem) => (i.kind === 'board' ? repo.restore(i.id) : repo.restoreElement(i.id)),
-    onSuccess: (_d, i) => {
-      refresh()
-      const { title } = describeItem(i)
-      toast(`Restored ${title}`, i.kind === 'board' ? { tone: 'success', action: { label: 'Open', run: () => navigate(href(i.id)) } } : { tone: 'success' })
+    mutationFn: async (xs: TrashItem[]) => {
+      const failed: TrashItem[] = []
+      for (const i of boardsFirst(xs)) {
+        try { await (i.kind === 'board' ? repo.restore(i.id) : repo.restoreElement(i.id)) } catch { failed.push(i) }
+      }
+      return failed
     },
-    onError: () => toast('Couldn’t restore that. Restore the board it was in first.', { tone: 'error' }),
+    onSuccess: (failed, xs) => {
+      refresh()
+      setPicked(new Set())
+      if (failed.length) toast(failed.length === xs.length ? 'Couldn’t restore that. Restore the board it was in first.' : `Restored ${xs.length - failed.length} of ${xs.length}. Restore the board the rest were in first.`, { tone: 'error' })
+      else if (xs.length > 1) toast(`Restored ${xs.length} items`, { tone: 'success' })
+      else {
+        const i = xs[0]
+        toast(`Restored ${describeItem(i).title}`, i.kind === 'board' ? { tone: 'success', action: { label: 'Open', run: () => navigate(href(i.id)) } } : { tone: 'success' })
+      }
+    },
   })
   const forever = useMutation({
-    mutationFn: (i: TrashItem) => repo.deleteForever(i.kind, i.id),
-    onSuccess: () => { setAsking(null); refresh(); toast('Deleted forever') },
-    onError: () => { setAsking(null); toast('Couldn’t delete that', { tone: 'error' }) },
+    mutationFn: async (xs: TrashItem[]) => {
+      let failed = 0
+      for (const i of boardsFirst(xs)) {
+        try { await repo.deleteForever(i.kind, i.id) } catch { failed++ }
+      }
+      return failed
+    },
+    onSuccess: (failed) => {
+      setAsking(null); setPicked(new Set()); refresh()
+      if (failed) toast(`Couldn’t delete ${failed} item${failed === 1 ? '' : 's'}`, { tone: 'error' })
+      else toast('Deleted forever')
+    },
   })
 
   return (
@@ -140,10 +171,22 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
             <p className="mt-2 max-w-[340px] text-[length:var(--text-card)] text-[var(--text-secondary)]">When you delete a board or card, it waits here so you can restore it.</p>
           </div>
         ) : (
-          <div className="mt-8 overflow-x-auto rounded-[var(--radius-menu)] border border-[var(--border)] bg-[var(--card-bg)]">
+          <>
+          {chosen.length > 0 && (
+            <div role="toolbar" aria-label="Selected items" data-testid="trash-bulk" className="mt-6 flex items-center gap-3 rounded-[var(--radius-menu)] bg-[var(--primary-soft)] px-4 py-2">
+              <span className="font-semibold text-[var(--primary-ink)]">{chosen.length} selected</span>
+              <div className="flex-1" />
+              <Button className="!h-8 !px-3" onClick={() => restore.mutate(chosen)} disabled={restore.isPending}>Restore selected</Button>
+              <Button className="!h-8 !px-3" variant="destructive" onClick={() => setAsking(chosen)}>Delete selected forever</Button>
+            </div>
+          )}
+          <div className="mt-4 overflow-x-auto rounded-[var(--radius-menu)] border border-[var(--border)] bg-[var(--card-bg)]">
             <table className="w-full border-collapse text-left text-[length:var(--text-card)]">
               <thead>
                 <tr className="border-b border-[var(--border)] text-[length:var(--text-caption)] font-semibold text-[var(--text-secondary)]">
+                  <th scope="col" className="w-10 py-3 pl-4">
+                    <input type="checkbox" aria-label="Select all" checked={allOn} onChange={(e) => setPicked(e.target.checked ? new Set(list.map(keyOf)) : new Set())} className="h-4 w-4 accent-[var(--primary)]" />
+                  </th>
                   <th scope="col" className="px-4 py-3">Item</th>
                   <th scope="col" className="px-3 py-3">Was in</th>
                   <th scope="col" className="px-3 py-3">Deleted</th>
@@ -153,17 +196,18 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
               </thead>
               <tbody>
                 {list.map((i) => (
-                  <Row key={`${i.kind}:${i.id}`} item={i} now={now} onRestore={() => restore.mutate(i)} onDelete={() => setAsking(i)} />
+                  <Row key={keyOf(i)} item={i} now={now} checked={picked.has(keyOf(i))} onCheck={(on) => setOne(i, on)} onRestore={() => restore.mutate([i])} onDelete={() => setAsking([i])} />
                 ))}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </main>
 
       {asking && (
         <Dialog
-          title={`Delete ${quoted(describeItem(asking).title)} forever?`}
+          title={asking.length > 1 ? `Delete ${asking.length} items forever?` : `Delete ${quoted(describeItem(asking[0]).title)} forever?`}
           onClose={() => setAsking(null)}
           width={420}
           footer={
@@ -173,7 +217,7 @@ export function TrashPage({ homeTo = '/' }: { homeTo?: string }) {
             </>
           }
         >
-          <p className="text-[var(--text-secondary)]">{confirmText(asking)}</p>
+          <p className="text-[var(--text-secondary)]">{asking.length > 1 ? 'They will be gone for good, boards with everything in them. This can’t be undone.' : confirmText(asking[0])}</p>
         </Dialog>
       )}
     </div>
