@@ -7,6 +7,9 @@ export const THUMB_EDGE = 512
 export const originalPath = (uid: string, elementId: string, ext: string): string => `${uid}/${elementId}/original.${ext}`
 export const thumbPath = (uid: string, elementId: string, ext: string): string => `${uid}/${elementId}/thumb.${ext}`
 
+/** First-page preview of a PDF file card. */
+export const previewPath = (uid: string, elementId: string): string => `${uid}/${elementId}/preview.jpg`
+
 export function extOf(name: string, fallback = 'bin'): string {
   const m = /\.([A-Za-z0-9]{1,8})$/.exec(name)
   return m ? m[1].toLowerCase() : fallback

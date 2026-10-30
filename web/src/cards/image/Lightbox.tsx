@@ -69,9 +69,11 @@ export function Lightbox({ id }: { id: string }) {
     if (!c.path) return
     try { await downloadObject(c.path, c.name) } catch { toast('Couldn’t download the image', { tone: 'error' }) }
   }
+  // Fit the window, but never bigger than ~960 px on the long edge (08-lightbox-default).
+  const LIGHTBOX_MAX = 960
   const sizeStyle = {
     aspectRatio: `${c.w} / ${c.h}`,
-    height: `min(calc(100vh - 220px), calc((100vw - 240px) * ${c.h / c.w}))`,
+    height: `min(calc(100vh - 220px), calc((100vw - 240px) * ${c.h / c.w}), ${Math.min(LIGHTBOX_MAX, LIGHTBOX_MAX * (c.h / c.w))}px)`,
   }
 
   return createPortal(

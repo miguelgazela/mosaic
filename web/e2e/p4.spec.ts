@@ -131,3 +131,63 @@ test('files: Upload button makes a file card; over 10 MB fails without retry', a
   await expect(big).toContainText('Too large (11 MB). The limit is 10 MB.')
   await expect(big.getByRole('button', { name: 'Retry' })).toHaveCount(0)
 })
+
+function tinyPdf(pages: number): Buffer {
+  const objs: string[] = []
+  const kids = Array.from({ length: pages }, (_, i) => `${3 + i} 0 R`).join(' ')
+  objs.push('<< /Type /Catalog /Pages 2 0 R >>', `<< /Type /Pages /Kids [${kids}] /Count ${pages} >>`)
+  for (let i = 0; i < pages; i++) objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>')
+  let out = '%PDF-1.4\n'
+  const offs: number[] = []
+  objs.forEach((o, i) => { offs.push(out.length); out += `${i + 1} 0 obj\n${o}\nendobj\n` })
+  const xref = out.length
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')
+  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`
+  return Buffer.from(out)
+}
+
+test('a PDF gets a first-page preview and a page count', async ({ page }) => {
+  const mock = await mockStorage(page)
+  await page.goto('/dev/board/p13pdf')
+  await page.getByTestId('upload-input').setInputFiles({ name: 'Call sheet.pdf', mimeType: 'application/pdf', buffer: tinyPdf(2) })
+  const card = page.getByTestId('file-card')
+  await expect(card).toHaveAttribute('data-state', 'ready')
+  await expect.poll(() => mock.uploads.some((p) => p.endsWith('/preview.jpg')), { timeout: 15000 }).toBe(true)
+  await expect(card.getByTestId('file-preview')).toBeVisible()
+  await expect(card).toContainText('2 pages')
+})
+
+test('selected image: ring and size badge include the caption; lightbox is capped at 960 px; drop zone lets cards show', async ({ page }) => {
+  await mockStorage(page)
+  await page.goto('/dev/board/p13img')
+  await dropFiles(page, [{ name: 'IMG_2041.png', type: 'image/png', image: true }])
+  const card = page.getByTestId('image-card')
+  await expect(card).toHaveAttribute('data-state', 'ready')
+  await card.click()
+  await page.keyboard.press('Enter')
+  await page.getByRole('textbox', { name: 'Caption' }).fill('Studio test, natural light')
+  await page.keyboard.press('Enter')
+  await page.getByTestId('canvas').click({ position: { x: 700, y: 500 } })
+  await card.click()
+  await expect(page.getByTestId('size-badge')).toHaveText(/^\d+ × \d+$/)
+  const ring = (await page.getByTestId('image-ring').boundingBox())!
+  const cap = (await page.getByTestId('image-caption').boundingBox())!
+  expect(ring.y + ring.height).toBeGreaterThanOrEqual(cap.y + cap.height - 1)
+
+  await page.setViewportSize({ width: 1800, height: 1400 })
+  await card.dblclick()
+  const img = (await page.getByTestId('lightbox-image').boundingBox())!
+  expect(Math.max(img.width, img.height)).toBeLessThanOrEqual(961)
+  await page.keyboard.press('Escape')
+
+  // Drop zone is a translucent tint: a card under it is still painted (not dimmed to nothing).
+  await page.evaluate(() => {
+    const dt = new DataTransfer()
+    dt.items.add(new File([new Uint8Array(4)], 'a.zip', { type: 'application/zip' }))
+    const c = document.querySelector('[data-testid="canvas"]')!
+    const r = c.getBoundingClientRect()
+    c.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: r.left + 50, clientY: r.top + 50 }))
+  })
+  const alpha = await page.getByTestId('drop-zone').evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(alpha).toMatch(/0\.[3-8]/)
+})

@@ -52,7 +52,7 @@ function CaptionEditor({ id, initial }: { id: string; initial: string }) {
   )
 }
 
-function ImageCard({ element: el, inColumn }: CardProps) {
+function ImageCard({ element: el, inColumn, selected }: CardProps) {
   const c = readImage(el.content)
   const up = useUploads((s) => s.byId[el.id])
   const exporting = useExportMode((s) => s.on)
@@ -60,6 +60,8 @@ function ImageCard({ element: el, inColumn }: CardProps) {
   const editing = useBoard((s) => s.editing === el.id)
   const lightboxOpen = useLightbox((s) => s.openId === el.id)
   const root = useRef<HTMLDivElement>(null)
+  const hang = useRef<HTMLDivElement>(null)
+  const [hangH, setHangH] = useState(0)
   const near = useNearViewport(root)
   const local = up?.localUrl ?? keepLocal.get(el.id)
   const wantPath = thumbView && c.thumbPath ? c.thumbPath : c.path
@@ -83,6 +85,16 @@ function ImageCard({ element: el, inColumn }: CardProps) {
     ro.observe(node)
     return () => ro.disconnect()
   }, [inColumn, el.id])
+
+  // The caption hangs below the card box (outside columns), so the selection ring and size badge are drawn here to cover it.
+  const hanging = !inColumn
+  useEffect(() => {
+    const node = hang.current
+    if (!node) { setHangH(0); return }
+    const ro = new ResizeObserver(() => setHangH(node.offsetHeight))
+    ro.observe(node)
+    return () => ro.disconnect()
+  }, [hanging, editing, c.caption, c.name, uploading, failed])
 
   const pct = Math.round((up?.progress ?? 0) * 100)
   const strip = editing ? (
@@ -162,6 +174,7 @@ function ImageCard({ element: el, inColumn }: CardProps) {
       </div>
       {strip && (
         <div
+          ref={hang}
           className={`bg-[var(--card-bg)] px-3 py-2 text-[length:var(--text-card)] leading-[var(--leading-card)] ${
             inColumn ? 'rounded-b-[var(--radius-card)]' : 'absolute left-0 right-0 top-full rounded-b-[var(--radius-card)]'
           }`}
@@ -170,6 +183,25 @@ function ImageCard({ element: el, inColumn }: CardProps) {
         >
           {strip}
         </div>
+      )}
+      {selected && (
+        <>
+          <div
+            aria-hidden
+            data-testid="image-ring"
+            className="pointer-events-none absolute left-0 right-0 top-0"
+            style={{ height: `calc(100% + ${strip && hanging ? hangH : 0}px)`, outline: 'calc(2px / var(--zoom)) solid var(--primary)', borderRadius: 'var(--radius-card)' }}
+          />
+          {hanging && !uploading && !failed && (
+            <span
+              data-testid="size-badge"
+              className="pointer-events-none absolute right-0 rounded-[var(--radius-chip)] bg-[var(--primary)] px-1.5 text-[length:var(--text-caption)] font-semibold leading-4 text-white"
+              style={{ top: `calc(100% + ${strip ? hangH : 0}px + 6px)`, transform: 'scale(calc(1 / var(--zoom)))', transformOrigin: 'top right' }}
+            >
+              {Math.round(el.width)} × {Math.round(el.height ?? el.width * (c.h / c.w))}
+            </span>
+          )}
+        </>
       )}
       {lightboxOpen && <Lightbox id={el.id} />}
     </div>
@@ -185,6 +217,7 @@ export const imageCard: CardDefinition = {
   minWidth: 96,
   minHeight: 48,
   colorable: false,
+  ownSelectionRing: true,
   editOnCreate: false,
   defaultContent: () => ({}),
   onPaste(data, at) {

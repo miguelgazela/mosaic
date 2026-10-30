@@ -47,7 +47,7 @@ export function DropZone() {
   return (
     <div
       data-testid="drop-zone"
-      className="pointer-events-none absolute inset-2 z-30 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-menu)] border-2 border-dashed border-[var(--primary)] bg-[var(--primary-soft)]/90"
+      className="pointer-events-none absolute inset-2 z-30 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-menu)] border-2 border-dashed border-[var(--primary)] bg-[var(--primary-soft)]/70"
     >
       <span className="flex h-16 w-16 items-center justify-center rounded-[var(--radius-tile)] bg-[var(--primary)] text-white">
         <Upload size={28} aria-hidden />

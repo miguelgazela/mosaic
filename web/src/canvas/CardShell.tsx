@@ -62,7 +62,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
               height: el.height ?? undefined,
               zIndex: lifted ? 1_000_000 : rank,
             }),
-        outline: selected ? 'calc(2px / var(--zoom)) solid var(--primary)' : undefined,
+        outline: selected && !def?.ownSelectionRing ? 'calc(2px / var(--zoom)) solid var(--primary)' : undefined,
         borderRadius: 'var(--radius-card)',
       }}
       onPointerDown={(e) => {
