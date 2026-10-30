@@ -1,4 +1,4 @@
-import { Minus, Plus, Redo2, Undo2 } from 'lucide-react'
+import { Maximize2, Minus, Plus, Redo2, Undo2 } from 'lucide-react'
 import { MenuDivider, MenuItem, MenuPanel } from '../ui'
 import { Popover } from '../ui/Popover'
 import { Tooltip } from '../ui'
@@ -7,7 +7,7 @@ import { fitToContent, zoomBy, zoomTo } from './viewport'
 
 const LEVELS = [0.25, 0.5, 1, 2]
 const btn =
-  'flex h-8 items-center justify-center rounded-[var(--radius-ui)] text-[length:var(--text-sm)] font-medium hover:bg-[var(--fill-hover)] active:bg-[var(--fill-pressed)]'
+  'flex h-8 max-md:h-11 items-center justify-center rounded-[var(--radius-ui)] text-[length:var(--text-sm)] font-medium hover:bg-[var(--fill-hover)] active:bg-[var(--fill-pressed)]'
 
 /** Undo / redo for people who don't reach for the keyboard (⌘Z / ⇧⌘Z). */
 export function UndoControls() {
@@ -36,16 +36,16 @@ export function ZoomControls() {
   const pct = Math.round(zoom * 100)
   return (
     <div
-      className="absolute bottom-4 right-4 flex items-center gap-0.5 rounded-[var(--radius-menu)] border border-[var(--chrome-border)] bg-[var(--card-bg)] p-1"
+      className="absolute bottom-4 right-4 flex items-center gap-0.5 rounded-[var(--radius-menu)] max-md:left-1/2 max-md:right-auto max-md:-translate-x-1/2 border border-[var(--chrome-border)] bg-[var(--card-bg)] p-1"
       style={{ boxShadow: 'var(--shadow-card)' }}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <button className={`${btn} w-8`} aria-label="Zoom out" onClick={() => zoomBy(1 / 1.25)}><Minus size={16} /></button>
+      <button className={`${btn} w-8 max-md:w-11`} aria-label="Zoom out" onClick={() => zoomBy(1 / 1.25)}><Minus size={16} /></button>
       <Popover
         up
         align="right"
         trigger={({ toggle }) => (
-          <button className={`${btn} w-14`} aria-label="Zoom level" aria-haspopup="menu" data-testid="zoom-level" onClick={toggle}>
+          <button className={`${btn} w-14 max-md:w-16`} aria-label="Zoom level" aria-haspopup="menu" data-testid="zoom-level" onClick={toggle}>
             {pct}%
           </button>
         )}
@@ -60,7 +60,8 @@ export function ZoomControls() {
           </MenuPanel>
         )}
       </Popover>
-      <button className={`${btn} w-8`} aria-label="Zoom in" onClick={() => zoomBy(1.25)}><Plus size={16} /></button>
+      <button className={`${btn} w-8 max-md:w-11`} aria-label="Zoom in" onClick={() => zoomBy(1.25)}><Plus size={16} /></button>
+      <button className={`${btn} hidden w-8 max-md:flex max-md:w-11`} aria-label="Fit to content" onClick={() => fitToContent()}><Maximize2 size={16} /></button>
     </div>
   )
 }

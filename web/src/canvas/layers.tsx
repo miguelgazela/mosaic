@@ -3,10 +3,29 @@ import { useShallow } from 'zustand/react/shallow'
 import { CardShell } from './CardShell'
 import { ConnectionsLayer, ConnectionsOverlay } from './ConnectionsLayer'
 import { boundsOf, worldToScreen } from './geometry'
-import { elementRect, selectedIds, useBoard } from './store'
+import { elementRect, selectedIds, useBoard, type BoardState } from './store'
+import { useExportMode } from '../lib/storage/exportMode'
+
+/** Off-screen cards are not mounted (NFR-1: 500 cards). Selected and editing cards always stay, so drags and editors survive. */
+const CULL_MARGIN = 240 // screen px around the viewport
+
+export function visibleIds(s: BoardState, all: boolean): string[] {
+  const top = Object.keys(s.elements).filter((id) => !s.elements[id].parentId)
+  if (all || s.size.w === 0 || s.size.h === 0) return top
+  const { x, y, zoom } = s.viewport
+  const m = CULL_MARGIN / zoom
+  const left = -x / zoom - m, topEdge = -y / zoom - m
+  const right = left + s.size.w / zoom + 2 * m, bottom = topEdge + s.size.h / zoom + 2 * m
+  return top.filter((id) => {
+    if (s.selected[id] || s.editing === id) return true
+    const r = elementRect(s, id)
+    return r.x < right && r.x + r.w > left && r.y < bottom && r.y + r.h > topEdge
+  })
+}
 
 const CardLayer = memo(function CardLayer() {
-  const ids = useBoard(useShallow((s) => Object.keys(s.elements).filter((id) => !s.elements[id].parentId)))
+  const exporting = useExportMode((s) => s.on)
+  const ids = useBoard(useShallow((s) => visibleIds(s, exporting)))
   return (
     <>
       {ids.map((id) => (

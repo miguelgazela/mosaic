@@ -2,6 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 
 test.use({ viewport: { width: 1440, height: 900 } })
 
+// Empty canvas corner (right of the tool rail, below the cards): a real pointer-down that leaves edit mode and deselects.
+const clickEmptyCanvas = async (page: Page) => {
+  const box = (await page.getByTestId('canvas').boundingBox())!
+  await page.mouse.click(box.x + box.width - 40, box.y + box.height - 160)
+}
 const shot = (name: string) => ({ path: `test-results/p6/${name}.png` })
 const pad = (n: number) => String(n).padStart(2, '0')
 const day = (offset: number) => {
@@ -17,9 +22,12 @@ test.describe('to-do card', () => {
   })
 
   test('T adds a card; add, check, date, hide completed, undo', async ({ page }) => {
-    await page.keyboard.press('t')
     const card = page.getByTestId('todo-card')
-    await expect(card).toBeVisible()
+    // The key can land before the shortcut listener is attached (seen once in a loaded full run): retry until the card exists.
+    await expect(async () => {
+      if ((await card.count()) === 0) await page.keyboard.press('t')
+      await expect(card).toBeVisible({ timeout: 500 })
+    }).toPass({ timeout: 10_000 })
     await card.getByRole('button', { name: 'Add an item…' }).click()
     await expect(card.getByLabel('To-do item')).toBeFocused()
     await page.keyboard.type('Book the studio')
@@ -39,16 +47,17 @@ test.describe('to-do card', () => {
     await row.hover()
     await row.getByRole('button', { name: 'Set due date' }).click()
     await page.getByRole('button', { name: 'Today', exact: true }).click()
-    await page.locator('body').click({ position: { x: 5, y: 5 } }) // leave edit mode: row tools give way to the chip
+    await clickEmptyCanvas(page) // leave edit mode: row tools give way to the chip
     await expect(row.getByTestId('due-chip')).toHaveText('Today')
     await expect(row.getByTestId('due-chip')).toHaveAttribute('data-due-kind', 'today')
     await page.screenshot(shot('todo-card'))
 
-    // hide completed, then undo it
+    // hide completed, then undo it (the button shows while the card is selected)
+    await card.click({ position: { x: 150, y: 8 } })
     await card.getByRole('button', { name: 'Hide completed' }).click()
     await expect(card.getByText('1 completed hidden.')).toBeVisible()
     await expect(card.getByLabel('To-do item')).toHaveCount(1)
-    await page.locator('body').click({ position: { x: 5, y: 5 } })
+    await clickEmptyCanvas(page)
     await page.keyboard.press('Control+z')
     await expect(card.getByLabel('To-do item')).toHaveCount(2)
   })

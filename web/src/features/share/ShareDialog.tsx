@@ -20,7 +20,7 @@ export function ShareDialog({ boardId, title, onClose }: { boardId: string; titl
   const qc = useQueryClient()
   const shares = useShares(boardId)
   const subs = useSubBoards(boardId)
-  const [include, setInclude] = useState(false)
+  const [include, setInclude] = useState(true) // matches shares.include_subboards default
   const [copied, setCopied] = useState<string | null>(null)
   const [revoking, setRevoking] = useState<ShareLink | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)

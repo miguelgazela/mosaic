@@ -77,3 +77,9 @@ export const confirmText = (i: TrashItem): string =>
   i.kind === 'board'
     ? `The board${i.itemCount ? ` and its ${plural(i.itemCount, 'item')}` : ''} will be gone for good. This can’t be undone.`
     : 'This card will be gone for good. This can’t be undone.'
+
+/** Empty notes are auto-discarded by the canvas; they are soft-deleted but not worth restoring, so Trash hides them. */
+export const isEmptyNote = (i: TrashItem): boolean =>
+  i.kind === 'element' && i.type === 'note' && !(i.plainText ?? '').trim() && !docText(i.content?.doc).trim()
+
+export const visibleTrash = (items: TrashItem[]): TrashItem[] => items.filter((i) => !isEmptyNote(i))

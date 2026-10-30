@@ -55,7 +55,7 @@ export function BoardPicker({ boardId }: { boardId: string }) {
                 key={key}
                 aria-label={label}
                 aria-pressed={current === key}
-                className={`${cell} ${current === key ? '!bg-[var(--primary-soft)] text-[var(--primary-ink)] ring-1 ring-[var(--primary)]' : ''}`}
+                className={`${cell} !bg-[var(--board-tile)] text-[var(--board-icon)] ${current === key ? 'ring-2 ring-[var(--primary)]' : ''}`}
                 onClick={() => save({ icon: key })}
               >
                 <Icon size={18} strokeWidth={1.75} />

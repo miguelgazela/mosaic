@@ -17,6 +17,7 @@ import { MoveToHost } from '../features/boards/MoveToDialog'
 import { SharedBoardPage } from '../features/share/SharedBoardPage'
 import { NotMember } from '../auth/NotMember'
 import { ToastHost } from '../ui'
+import { ShortcutsHost } from '../features/shortcuts/ShortcutsSheet'
 import { useFlushAllOnStart } from '../lib/sync/useFlushAllOnStart'
 
 function SyncBoot() {
@@ -47,6 +48,7 @@ export function App() {
           </Routes>
           <MoveToHost />
           <ExportProgress />
+          <ShortcutsHost />
           <ToastHost />
         </BrowserRouter>
       </AuthProvider>

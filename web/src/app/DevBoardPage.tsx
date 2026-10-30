@@ -9,6 +9,7 @@ import { BoardHrefContext, TrashHrefContext } from '../features/boards/nav'
 import { recordRecent } from '../features/boards/recent'
 import { memoryShareRepo, setShareRepo } from '../features/share/shareApi'
 import { OfflineBanner, useOnline } from '../ui'
+import { usePhone } from '../lib/usePhone'
 import { TopBar } from './TopBar'
 
 /** One in-memory share repo for the dev session; sub-board titles come from the dev database. */
@@ -31,7 +32,8 @@ export function DevBoardPage() {
   const online = useOnline()
   const qc = useQueryClient()
   const [ready, setReady] = useState(false)
-  const readOnly = params.get('view') === '1'
+  const phone = usePhone()
+  const readOnly = params.get('view') === '1' || phone
   const isHome = params.get('home') === '1' || boardId === 'home'
   const title = useBoardInfo(boardId).data?.title ?? 'Untitled board'
   const repo = useMemo(() => ensureDevRepo(), [])
@@ -87,7 +89,7 @@ export function DevBoardPage() {
           />
           <OfflineBanner online={online} />
           <div className="relative min-h-0 flex-1">
-            {ready && <CanvasView hideEmptyHint={isHome || readOnly} />}
+            {ready && <CanvasView hideEmptyHint={isHome || readOnly} hidePill={phone} />}
             {ready && isHome && <HomeEmpty />}
           </div>
         </div>

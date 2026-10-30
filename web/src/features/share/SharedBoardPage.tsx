@@ -25,8 +25,8 @@ function sharedRepo(p: SharePayload): BoardRepo {
 
 function MadeWith() {
   return (
-    <Link to="/" className="ml-auto flex items-center gap-2 rounded-[var(--radius-ui)] px-2 py-1 text-[length:var(--text-card)] font-medium text-[var(--text-secondary)] hover:bg-[var(--fill-hover)]">
-      <LogoMark size={20} /> Made with Mosaic
+    <Link to="/" aria-label="Made with Mosaic" className="ml-auto flex items-center gap-2 rounded-[var(--radius-ui)] px-2 py-1 max-md:min-h-11 max-md:min-w-11 max-md:justify-center text-[length:var(--text-card)] font-medium text-[var(--text-secondary)] hover:bg-[var(--fill-hover)]">
+      <LogoMark size={20} /> <span className="max-md:hidden">Made with Mosaic</span>
     </Link>
   )
 }
@@ -45,10 +45,10 @@ function SharedTopBar({ p, hrefFor }: { p: SharePayload; hrefFor: (id: string) =
     <header className={bar} style={{ height: 'var(--topbar-h)' }}>
       {deep ? (
         <>
-          <Link to={hrefFor(parent.id)} aria-label={`Back to ${parent.title}`} className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-ui)] hover:bg-[var(--fill-hover)]"><ChevronLeft size={18} /></Link>
+          <Link to={hrefFor(parent.id)} aria-label={`Back to ${parent.title}`} className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-ui)] hover:bg-[var(--fill-hover)] max-md:h-11 max-md:w-11"><ChevronLeft size={18} /></Link>
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
             {p.path.slice(0, -1).map((c) => (
-              <span key={c.id} className="flex items-center gap-1.5">
+              <span key={c.id} className="flex items-center gap-1.5 max-md:hidden">
                 <Link to={hrefFor(c.id)} className="truncate text-[length:var(--text-body)] text-[var(--text-secondary)] hover:text-[var(--text)]">{c.title}</Link>
                 <ChevronRight size={14} className="text-[var(--icon-subtle)]" aria-hidden />
               </span>
@@ -56,7 +56,7 @@ function SharedTopBar({ p, hrefFor }: { p: SharePayload; hrefFor: (id: string) =
             <Tile b={p.board} />
             <h1 className="truncate text-[length:var(--text-body)] font-semibold">{p.board.title}</h1>
           </nav>
-          <span className="truncate text-[length:var(--text-caption)] text-[var(--text-secondary)]">Shared by {p.ownerName}, view only</span>
+          <span className="truncate text-[length:var(--text-caption)] text-[var(--text-secondary)] max-md:hidden">Shared by {p.ownerName}, view only</span>
         </>
       ) : (
         <>
@@ -141,7 +141,7 @@ export function SharedBoardPage() {
     <BoardHrefContext.Provider value={hrefFor}>
       <div className="flex h-full flex-col" data-testid="shared-board">
         <SharedTopBar p={p} hrefFor={hrefFor} />
-        <div className="relative min-h-0 flex-1">{shownFor && <CanvasView hideEmptyHint hidePill />}</div>
+        <div className="relative min-h-0 flex-1">{shownFor && <CanvasView hidePill />}</div>
       </div>
     </BoardHrefContext.Provider>
   )
