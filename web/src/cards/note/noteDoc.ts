@@ -91,3 +91,26 @@ export function docToMarkdown(doc: DocNode): string {
   }
   return out.join('\n\n').trim()
 }
+
+/**
+ * Flip the `checked` attr of the nth task item (document order, nested items after their parent, the same order
+ * as the checkboxes in the rendered HTML). Returns a new doc, or null when there is no such item.
+ */
+export function toggleTaskItem(doc: DocNode, index: number): DocNode | null {
+  let i = 0
+  let hit = false
+  const walk = (n: DocNode): DocNode => {
+    let out = n
+    if (n.type === 'taskItem') {
+      if (i === index) { hit = true; out = { ...n, attrs: { ...n.attrs, checked: !n.attrs?.checked } } }
+      i++
+    }
+    if (n.content) {
+      const kids = n.content.map(walk)
+      if (kids.some((k, j) => k !== n.content![j])) out = { ...out, content: kids }
+    }
+    return out
+  }
+  const next = walk(doc)
+  return hit ? next : null
+}

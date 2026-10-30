@@ -8,7 +8,7 @@ import { useBoard } from '../../canvas/store'
 import type { CardDefinition, CardProps } from '../types'
 import { noteExtensions } from './extensions'
 import { FormatToolbar } from './FormatToolbar'
-import { docOf, docToMarkdown, docToText, isEmptyDoc, textToDoc, type DocNode } from './noteDoc'
+import { docOf, docToMarkdown, docToText, isEmptyDoc, textToDoc, toggleTaskItem, type DocNode } from './noteDoc'
 
 const SAVE_DELAY = 400
 
@@ -28,10 +28,29 @@ function discardWhenDeselected(id: string): void {
 }
 
 /** Read-only render: plain HTML from the schema, no editor instance per card (500-card boards stay light). */
-const NoteView = memo(function NoteView({ doc }: { doc: DocNode }) {
+const NoteView = memo(function NoteView({ doc, id }: { doc: DocNode; id: string }) {
   const html = useMemo(() => (isEmptyDoc(doc) && !doc.content?.some((n) => n.type !== 'paragraph') ? '' : generateHTML(doc, noteExtensions)), [doc])
   if (!html) return <p className="note-prose-placeholder">Type something…</p>
-  return <div className="note-prose" dangerouslySetInnerHTML={{ __html: html }} />
+  const isBox = (t: EventTarget) => t instanceof HTMLInputElement && t.type === 'checkbox'
+  return (
+    <div
+      className="note-prose"
+      dangerouslySetInnerHTML={{ __html: html }}
+      // Ticking a to-do line works without entering edit mode: the checkbox is a button, not the start of a drag.
+      onPointerDown={(e) => { if (isBox(e.target) && !useBoard.getState().readOnly) e.stopPropagation() }}
+      onClick={(e) => {
+        const box = e.target
+        if (!isBox(box)) return
+        e.preventDefault() // the doc is the source of truth; React re-renders the new state
+        const s = useBoard.getState()
+        const el = s.elements[id]
+        if (s.readOnly || !el) return
+        const all = [...e.currentTarget.querySelectorAll('input[type="checkbox"]')]
+        const next = toggleTaskItem(docOf(el.content), all.indexOf(box as HTMLInputElement))
+        if (next) s.exec(patchCmd('Tick to-do line', [{ id, before: { content: el.content }, after: { content: { ...el.content, doc: next } } }]))
+      }}
+    />
+  )
 })
 
 function NoteEditor({ id }: { id: string }) {
@@ -126,7 +145,7 @@ function NoteCard({ element: el }: CardProps) {
       style={{ background: colorVar(el.color) ?? 'var(--card-bg)' }}
       onDoubleClick={() => useBoard.getState().setEditing(el.id)}
     >
-      {editing ? <NoteEditor id={el.id} /> : <NoteView doc={doc} />}
+      {editing ? <NoteEditor id={el.id} /> : <NoteView doc={doc} id={el.id} />}
     </div>
   )
 }

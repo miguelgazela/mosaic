@@ -63,10 +63,22 @@ const rpc = async (fn: string, args: Record<string, unknown>) => {
   return data
 }
 
+/**
+ * Boards being created right now. A rename typed straight after "Add board" reaches `update` before the insert has
+ * landed; an update of a row that doesn't exist yet changes nothing and the board stays "Untitled board". So `update`
+ * waits for the create of the same board.
+ */
+const creating = new Map<string, Promise<void>>()
+
 const supabaseRepo: BoardRepo = {
   async create({ id, parentId, title }) {
-    const { error } = await supabase.from('boards').upsert({ id, parent_board_id: parentId, title }, { onConflict: 'id', ignoreDuplicates: true })
-    if (error) throw error
+    const run = (async () => {
+      const { error } = await supabase.from('boards').upsert({ id, parent_board_id: parentId, title }, { onConflict: 'id', ignoreDuplicates: true })
+      if (error) throw error
+    })()
+    const settled = run.then(() => undefined, () => undefined).finally(() => { if (creating.get(id) === settled) creating.delete(id) })
+    creating.set(id, settled)
+    return run
   },
   async info(id) {
     const { data, error } = await supabase.from('boards').select('title,icon,color').eq('id', id).is('deleted_at', null).single()
@@ -79,6 +91,7 @@ const supabaseRepo: BoardRepo = {
     return count ?? 0
   },
   async update(id, patch) {
+    await creating.get(id)
     const { error } = await supabase.from('boards').update(patch).eq('id', id)
     if (error) throw error
   },

@@ -50,6 +50,7 @@ export const CardShell = memo(function CardShell({ id, inColumn = false }: { id:
       data-w={el.width}
       data-h={el.height ?? ''}
       data-selected={selected}
+      data-readonly={readOnly || undefined}
       data-lod={lowZoom && !def?.keepTextAtLowZoom ? 'low' : undefined}
       data-parent={el.parentId ?? undefined}
       style={{

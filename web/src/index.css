@@ -95,3 +95,9 @@ body {
 }
 [data-lod='low'] .card-inner :is(h1, h2, h3, [data-lod-bar='dark'], [data-testid='link-title']) { --lod-c: var(--text); background-size: 55% 1lh; }
 [data-lod='low'] .card-inner a { display: block; }
+
+/* Read-only viewer: things that only work for editors must not look clickable. */
+[data-readonly] .note-prose input[type='checkbox'],
+[data-readonly] [data-todo-row] input[type='checkbox'] { cursor: default; pointer-events: none; }
+[data-readonly] [data-testid='swatch-card'] { cursor: default; }
+[data-readonly] [data-todo-row]:hover { background: transparent; }
