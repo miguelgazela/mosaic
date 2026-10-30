@@ -304,5 +304,5 @@ Source: "Owner bugs from first real use" under Open follow-ups.
 - **Board rename:** title field wide enough to show its placeholder; grows with the text.
 - **Connection dots:** not on every side by default. One dot (or none) until hover or a key reveals the rest; keep drag-to-connect working.
 
-**Design refs:** `03-trash-*` / `06-trash-*`, `00-card-link*`, `00-card-image-and-file`, `04-board-*` (top bar), `00-connections*` — check names in `design/screens/`.
+**Design refs:** `06-trash-populated`, `00-card-link`, `00-card-image-and-file`, `04-board-populated` (top bar), `00-connections`.
 **Done when:** each item fixed with a test (or logged with a reason); lint, unit tests, build and full Playwright pass.
