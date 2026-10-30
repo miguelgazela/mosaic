@@ -52,7 +52,7 @@ Each phase below is a self-contained brief: paste "Do Phase N from ROADMAP.md" i
   - Trash: select several or all items and restore / delete them together.
   - Switching boards re-renders the whole page: top bar and tool rail vanish and come back. Only the canvas should change.
   - Dragging a link card fails: the card leaves its spot and jumps up and to the left.
-  - Link previews look poor. `milanote-unfurl` is not deployed yet, so every link shows the failed state; re-check after deploy and improve the card.
+  - Link previews look poor. `milanote-unfurl` deployed 2026-10-30. Cards that failed before stay failed (`failed: true` is never retried): add a "Retry preview" action or retry failed cards once on load. Then improve the card.
   - "Can't add images?": Upload button on the tool rail and drag-drop exist (P4) but were not found, or failed on production. Check upload on the live site; make adding an image obvious.
   - Renaming a board: the title field is too narrow to show its placeholder.
   - Connection dots show on every side of every card. Show one (or none) by default; reveal the rest with a key or on demand.
