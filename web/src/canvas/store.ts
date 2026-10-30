@@ -7,6 +7,9 @@ import { rootOf } from './columns'
 import { UndoStack, type Command } from './undo'
 import type { Anchor, ConnEnd, Connection } from './connections'
 
+/** Below this zoom cards drop their text for grey bars (04-board-zoom-25). CSS: `[data-lod='low']` in index.css. */
+export const LOW_ZOOM = 0.4
+
 export type Tool = 'select' | 'hand' | 'line'
 export interface Patch { id: string; patch: Partial<CanvasElement> }
 export interface ConnPatch { id: string; patch: Partial<Connection> }

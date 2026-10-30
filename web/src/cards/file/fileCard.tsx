@@ -92,7 +92,7 @@ function FileCard({ element: el }: CardProps) {
           {failed ? <AlertCircle size={18} className="self-center pb-0" /> : ext}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[length:var(--text-card)] font-semibold leading-[var(--leading-card)]" title={c.name}>{c.name}</div>
+          <div data-lod-bar="dark" className="truncate text-[length:var(--text-card)] font-semibold leading-[var(--leading-card)]" title={c.name}>{c.name}</div>
           <div
             className="truncate text-[length:var(--text-caption)] leading-[var(--leading-caption)]"
             style={{ color: failed ? 'var(--danger)' : 'var(--text-muted)' }}

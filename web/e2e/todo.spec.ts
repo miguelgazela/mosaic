@@ -23,11 +23,8 @@ test.describe('to-do card', () => {
 
   test('T adds a card; add, check, date, hide completed, undo', async ({ page }) => {
     const card = page.getByTestId('todo-card')
-    // The key can land before the shortcut listener is attached (seen once in a loaded full run): retry until the card exists.
-    await expect(async () => {
-      if ((await card.count()) === 0) await page.keyboard.press('t')
-      await expect(card).toBeVisible({ timeout: 500 })
-    }).toPass({ timeout: 10_000 })
+    await page.keyboard.press('t')
+    await expect(card).toBeVisible()
     await card.getByRole('button', { name: 'Add an item…' }).click()
     await expect(card.getByLabel('To-do item')).toBeFocused()
     await page.keyboard.type('Book the studio')

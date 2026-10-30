@@ -166,6 +166,7 @@ export const columnCard: CardDefinition = {
   type: 'column',
   label: 'Column',
   Component: ColumnCard,
+  keepTextAtLowZoom: true,
   defaultSize: { width: 280, height: null },
   resize: 'width',
   minWidth: 200,

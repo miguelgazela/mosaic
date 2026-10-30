@@ -96,6 +96,8 @@ export interface CardDefinition {
   colorable?: boolean
   /** true when the card draws its own selection ring (e.g. to include a caption hanging below it). Default: the shell draws it. */
   ownSelectionRing?: boolean
+  /** true when the card's text should stay as text at low zoom instead of becoming bars (column titles). */
+  keepTextAtLowZoom?: boolean
   /** Shown in the left tool rail when set. Label is 12 px under a Lucide icon. */
   toolbar?: { label: string; icon: LucideIcon }
   toPlainText(el: CanvasElement): string

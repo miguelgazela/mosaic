@@ -82,3 +82,16 @@ body {
   input:not([type='checkbox']):not([type='radio']):not([data-canvas-input]) { min-height: 44px; }
   header :is(button, a), [role='dialog'] button, [role='menu'] [role='menuitem'], main button { min-height: 44px; min-width: 44px; }
 }
+
+/* Level of detail below LOW_ZOOM (04-board-zoom-25): text becomes grey bars, layout stays exactly as it is. */
+[data-lod='low'] .card-inner * { color: transparent !important; text-decoration: none !important; caret-color: transparent; }
+[data-lod='low'] .card-inner svg { visibility: hidden; }
+[data-lod='low'] .card-inner :is(p, li, h1, h2, h3, a, input, textarea, [data-lod-bar]) {
+  --lod-c: var(--border-strong);
+  background-image: linear-gradient(to bottom, transparent calc(50% - 0.32lh), var(--lod-c) calc(50% - 0.32lh) calc(50% + 0.32lh), transparent calc(50% + 0.32lh));
+  background-size: 100% 1lh;
+  background-repeat: repeat-y;
+  background-clip: content-box;
+}
+[data-lod='low'] .card-inner :is(h1, h2, h3, [data-lod-bar='dark'], [data-testid='link-title']) { --lod-c: var(--text); background-size: 55% 1lh; }
+[data-lod='low'] .card-inner a { display: block; }

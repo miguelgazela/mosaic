@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import {
   addCard, copySelection, cutSelection, deleteSelection, duplicateSelection, nudge, pasteClipboard, pasteData, reorder, selectAll,
 } from './actions'
@@ -15,8 +15,13 @@ const ARROWS: Record<string, [number, number]> = {
   ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
 }
 
+/**
+ * Layout effect on purpose: a passive effect runs after paint, so the cards can be on screen (and a test or a fast
+ * typist can press a key) before the listener exists, and that first key is lost. A layout effect attaches in the
+ * same commit that puts the canvas in the DOM.
+ */
 export function useCanvasShortcuts(): void {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const st = () => useBoard.getState()
 
     const keydown = (e: KeyboardEvent) => {
